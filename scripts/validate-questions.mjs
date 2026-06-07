@@ -2,10 +2,11 @@ import { QUESTION_BANK } from "../src/questions.js";
 import { QUIZ_MODES } from "../src/quiz.js";
 
 const EXPECTED_CATEGORIES = ["sport", "music", "culture", "general"];
-const EXPECTED_PER_CATEGORY = 75;
+const EXPECTED_PER_CATEGORY = 500;
 
 const errors = [];
 const ids = new Set();
+const questionTexts = new Set();
 const counts = Object.fromEntries(EXPECTED_CATEGORIES.map((category) => [category, 0]));
 
 QUESTION_BANK.forEach((question, index) => {
@@ -14,6 +15,8 @@ QUESTION_BANK.forEach((question, index) => {
   if (!question.id) errors.push(`Question at index ${index} is missing id.`);
   if (ids.has(question.id)) errors.push(`Duplicate id: ${question.id}`);
   ids.add(question.id);
+  if (questionTexts.has(question.question)) errors.push(`Duplicate question text: ${question.question}`);
+  questionTexts.add(question.question);
 
   if (!EXPECTED_CATEGORIES.includes(question.category)) {
     errors.push(`${label} has invalid category: ${question.category}`);

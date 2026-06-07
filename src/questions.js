@@ -1,3 +1,5 @@
+import { expandQuestionSets } from "./question-expansion.js";
+
 const QUESTION_SETS = {
   sport: [
     ["Which venue traditionally hosts the Boxing Day Test in Australia?", "Melbourne Cricket Ground", ["Sydney Cricket Ground", "Adelaide Oval", "The Gabba"]],
@@ -309,7 +311,9 @@ const QUESTION_SETS = {
   ]
 };
 
-export const QUESTION_BANK = Object.entries(QUESTION_SETS).flatMap(([category, rows]) =>
+const EXPANDED_QUESTION_SETS = expandQuestionSets(QUESTION_SETS);
+
+export const QUESTION_BANK = Object.entries(EXPANDED_QUESTION_SETS).flatMap(([category, rows]) =>
   rows.map(([question, answer, distractors], index) => {
     const id = `${category}-${String(index + 1).padStart(3, "0")}`;
     return {
