@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Australian Pub Trivia</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="intro" id="setup-view">
+        <div class="intro-copy">
+          <p class="eyebrow">Australian Pub Trivia</p>
+          <h1>Pick a quiz and chase 20 from 20.</h1>
+          <p class="lede">Mixed trivia leans general interest, with sport and music kept lighter. Category quizzes draw 20 questions from one topic.</p>
+        </div>
+
+        <form class="mode-panel" id="mode-form">
+          <fieldset>
+            <legend>Quiz mode</legend>
+            <div class="mode-grid" id="mode-options"></div>
+          </fieldset>
+          <button class="primary-button" type="submit">Start quiz</button>
+        </form>
+      </section>
+
+      <section class="quiz-view hidden" id="quiz-view" aria-live="polite">
+        <div class="quiz-topbar">
+          <div>
+            <p class="eyebrow" id="quiz-mode-label">Mixed</p>
+            <h2 id="quiz-title">20 questions</h2>
+          </div>
+          <button class="secondary-button" id="change-mode-button" type="button">Change mode</button>
+        </div>
+
+        <div class="progress-wrap" aria-label="Quiz progress">
+          <div class="progress-line">
+            <span id="answered-count">0</span> of 20 answered
+          </div>
+          <div class="progress-bar">
+            <span id="progress-fill"></span>
+          </div>
+        </div>
+
+        <form id="quiz-form" class="questions"></form>
+        <div class="submit-row">
+          <p class="validation-message" id="submit-message"></p>
+          <button class="primary-button" id="submit-quiz-button" type="button">Submit answers</button>
+        </div>
+      </section>
+
+      <section class="results-view hidden" id="results-view" aria-live="polite">
+        <div class="result-summary">
+          <p class="eyebrow">Final score</p>
+          <h2 id="score-heading">0 / 20</h2>
+          <p id="score-copy"></p>
+          <div class="result-actions">
+            <button class="primary-button" id="restart-button" type="button">New quiz</button>
+            <button class="secondary-button" id="results-change-mode-button" type="button">Choose mode</button>
+          </div>
+        </div>
+        <div class="review-list" id="review-list"></div>
+      </section>
+    </main>
+
+    <script type="module" src="src/app.js"></script>
+  </body>
+</html>
