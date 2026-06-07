@@ -348,10 +348,40 @@ Annika Sorenstam|won 10 women's major golf championships|golf
 Kelly Slater|won 11 world surfing titles|surfing
 Lance Franklin|kicked his 1,000th AFL goal in 2022|Australian rules football
 Gary Ablett Jr.|won two Brownlow Medals|Australian rules football
+Brent Harvey|played a VFL/AFL record 432 games|Australian rules football
+Tony Lockett|finished as the VFL/AFL's all-time leading goalkicker|Australian rules football
+Dustin Martin|won three Norm Smith Medals|Australian rules football
+Patrick Dangerfield|won the 2016 Brownlow Medal|Australian rules football
+Michael Tuck|played in seven VFL/AFL premiership teams|Australian rules football
+Joel Selwood|captained Geelong to the 2022 AFL premiership|Australian rules football
 Cameron Smith|became the first NRL player to reach 400 first-grade games|rugby league
 Johnathan Thurston|won four Dally M Medals|rugby league
+Cameron Smith|retired with 430 NRL appearances|rugby league
+Cameron Smith|retired as the NRL's all-time leading point-scorer|rugby league
+Billy Slater|won the 2011 Dally M Medal|rugby league
+Cooper Cronk|won Dally M Medals in 2013 and 2016|rugby league
+Andrew Johns|won three Dally M Medals|rugby league
+Darren Lockyer|retired with 355 NRL premiership appearances|rugby league
 Richie McCaw|captained New Zealand to Rugby World Cup wins in 2011 and 2015|rugby union
 Jonah Lomu|became a breakout star at the 1995 Rugby World Cup|rugby union
+Andrew Gaze|won a record seven NBL MVP awards|NBL basketball
+Andrew Gaze|finished as the NBL's all-time leading scorer|NBL basketball
+Bryce Cotton|won his fifth NBL MVP award for the 2024/25 season|NBL basketball
+Perth Wildcats|won their 10th NBL championship in 2020|NBL basketball
+Leroy Loggins|became one of the NBL's all-time great scorers|NBL basketball
+Chris Anstey|won both NBL MVP and Grand Final MVP honours in 2005/06|NBL basketball
+Liz Ellis|became one of Australia's most-capped netballers|netball
+Caitlin Bassett|captained Australia to the 2019 Netball World Cup silver medal|netball
+Irene van Dyk|became one of international netball's most prolific shooters|netball
+Sharelle McMahon|starred for Australia in the 1999 Netball World Cup final|netball
+Laura Geitz|captained Australia to the 2015 Netball World Cup title|netball
+Gretel Bueta|was named MVP of the 2022 Commonwealth Games netball final|netball
+Chris Lynn|became the Big Bash League's leading run-scorer|Big Bash cricket
+Aaron Finch|made an unbeaten 111 for the Melbourne Renegades in BBL 02|Big Bash cricket
+Perth Scorchers|became the first Big Bash League club to win five titles|Big Bash cricket
+Sydney Sixers|won back-to-back BBL titles in BBL 09 and BBL 10|Big Bash cricket
+Rashid Khan|took a Big Bash League hat-trick for the Adelaide Strikers|Big Bash cricket
+Dan Christian|became known for winning T20 titles across multiple leagues|Big Bash cricket
 `);
 
   return [
@@ -369,18 +399,18 @@ Jonah Lomu|became a breakout star at the 1995 Rugby World Cup|rugby union
 function milestoneRows(facts) {
   const bySport = groupRows(facts, ([, , sport]) => sport);
   const personTemplates = [
-    ([person, achievement, sport]) => [`Which ${sport} figure ${achievement}?`, person],
-    ([person, achievement, sport]) => [`In ${sport}, who ${achievement}?`, person],
-    ([person, achievement, sport]) => [`The ${sport} milestone '${achievement}' belongs to whom?`, person],
+    ([person, achievement, sport]) => [`Which ${sport} name ${achievement}?`, person],
+    ([person, achievement, sport]) => [`In ${sport}, which name is linked to this achievement: ${achievement}?`, person],
+    ([person, achievement, sport]) => [`The ${sport} milestone '${achievement}' belongs to which name or side?`, person],
     ([person, achievement, sport]) => [`Which ${sport} name is linked with this achievement: ${achievement}?`, person],
     ([person, achievement, sport]) => [`Who is the ${sport} answer for this milestone: ${achievement}?`, person],
-    ([person, achievement, sport]) => [`Which ${sport} competitor is known for having ${achievement}?`, person],
-    ([person, achievement, sport]) => [`Who achieved this in ${sport}: ${achievement}?`, person],
-    ([person, achievement, sport]) => [`Which ${sport} athlete should be matched to '${achievement}'?`, person],
-    ([person, achievement, sport]) => [`Name the ${sport} figure who ${achievement}.`, person],
-    ([person, achievement, sport]) => [`Which ${sport} player is connected to the record or feat '${achievement}'?`, person],
+    ([person, achievement, sport]) => [`Which ${sport} name is known for having ${achievement}?`, person],
+    ([person, achievement, sport]) => [`Which name achieved this in ${sport}: ${achievement}?`, person],
+    ([person, achievement, sport]) => [`Which ${sport} answer should be matched to '${achievement}'?`, person],
+    ([person, achievement, sport]) => [`Name the ${sport} answer linked to this feat: ${achievement}.`, person],
+    ([person, achievement, sport]) => [`Which ${sport} name is connected to the record or feat '${achievement}'?`, person],
     ([person, achievement, sport]) => [`Who is the correct ${sport} option for '${achievement}'?`, person],
-    ([person, achievement, sport]) => [`Which ${sport} athlete owns this trivia clue: ${achievement}?`, person]
+    ([person, achievement, sport]) => [`Which ${sport} answer owns this trivia clue: ${achievement}?`, person]
   ];
   const achievementTemplates = [
     ([person, achievement, sport]) => [`What ${sport} achievement is ${person} known for?`, achievement],
