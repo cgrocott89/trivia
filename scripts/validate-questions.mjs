@@ -2,7 +2,12 @@ import { QUESTION_BANK } from "../src/questions.js";
 import { DIFFICULTY_LEVELS, QUIZ_MODES } from "../src/quiz.js";
 
 const EXPECTED_CATEGORIES = ["sport", "music", "culture", "general"];
-const EXPECTED_PER_CATEGORY = 500;
+const EXPECTED_PER_CATEGORY = 2500;
+const EXPECTED_DIFFICULTY_COUNTS = {
+  easy: 300,
+  normal: 1100,
+  hard: 1100
+};
 
 const errors = [];
 const ids = new Set();
@@ -49,11 +54,21 @@ QUESTION_BANK.forEach((question, index) => {
     if (optionSet.size !== 4) errors.push(`${label} has duplicate options.`);
     if (!optionSet.has(question.answer)) errors.push(`${label} answer is not present in options.`);
   }
+
+  if (question.category === "sport" && question.difficulty === "hard" && question.sportScopedOptions !== true) {
+    errors.push(`${label} is a hard sport question without same-sport answer options.`);
+  }
 });
 
 for (const category of EXPECTED_CATEGORIES) {
   if (counts[category] !== EXPECTED_PER_CATEGORY) {
     errors.push(`${category} has ${counts[category]} questions; expected ${EXPECTED_PER_CATEGORY}.`);
+  }
+  for (const [difficulty, expected] of Object.entries(EXPECTED_DIFFICULTY_COUNTS)) {
+    const actual = difficultyCounts[category][difficulty];
+    if (actual !== expected) {
+      errors.push(`${category}/${difficulty} has ${actual} questions; expected ${expected}.`);
+    }
   }
 }
 

@@ -1,4 +1,4 @@
-export const TARGET_QUESTIONS_PER_CATEGORY = 500;
+export const TARGET_QUESTIONS_PER_CATEGORY = 2500;
 
 export function expandQuestionSets(baseSets) {
   const supplements = {
@@ -41,7 +41,17 @@ function fillSupplementRows(baseRows, supplementRows, needed, category) {
     (question) => rephraseQuestion(question, "Choose the correct answer"),
     (question) => rephraseQuestion(question, "What would you lock in for this one"),
     (question) => rephraseQuestion(question, "Which option solves this question"),
-    (question) => rephraseQuestion(question, "What is the correct response")
+    (question) => rephraseQuestion(question, "What is the correct response"),
+    (question) => rephraseQuestion(question, "Which option would you choose"),
+    (question) => rephraseQuestion(question, "What answer completes this"),
+    (question) => rephraseQuestion(question, "Which choice is right"),
+    (question) => rephraseQuestion(question, "What is the best answer"),
+    (question) => rephraseQuestion(question, "Which response is correct"),
+    (question) => rephraseQuestion(question, "How would you answer this"),
+    (question) => rephraseQuestion(question, "What should the answer be"),
+    (question) => rephraseQuestion(question, "Which option matches"),
+    (question) => rephraseQuestion(question, "What is the right call"),
+    (question) => rephraseQuestion(question, "Which answer is the fit")
   ];
 
   let variantIndex = 0;
@@ -50,7 +60,7 @@ function fillSupplementRows(baseRows, supplementRows, needed, category) {
     const makeQuestion = variants[Math.floor(variantIndex / uniqueSupplements.length) % variants.length];
     const variantQuestion = makeQuestion(source[0]);
     if (!seen.has(variantQuestion)) {
-      selected.push([variantQuestion, source[1], source[2]]);
+      selected.push([variantQuestion, source[1], source[2], source[3]]);
       seen.add(variantQuestion);
     }
     variantIndex += 1;
@@ -329,9 +339,12 @@ Don Bradman|finished with a Test batting average of 99.94|cricket
 Lewis Hamilton|matched Michael Schumacher with seven Formula 1 world titles|Formula 1
 Michael Schumacher|won seven Formula 1 world championships|Formula 1
 Max Verstappen|won a record 19 Formula 1 races in the 2023 season|Formula 1
+Ayrton Senna|won three Formula 1 world championships with McLaren|Formula 1
 Valentino Rossi|won seven premier-class motorcycle Grand Prix world titles|MotoGP
 Tiger Woods|completed the 'Tiger Slam' across 2000 and 2001|golf
 Jack Nicklaus|won a record 18 men's major golf championships|golf
+Rory McIlroy|completed golf's career Grand Slam at the Masters|golf
+Annika Sorenstam|won 10 women's major golf championships|golf
 Kelly Slater|won 11 world surfing titles|surfing
 Lance Franklin|kicked his 1,000th AFL goal in 2022|Australian rules football
 Gary Ablett Jr.|won two Brownlow Medals|Australian rules football
@@ -354,14 +367,54 @@ Jonah Lomu|became a breakout star at the 1995 Rugby World Cup|rugby union
 }
 
 function milestoneRows(facts) {
-  const people = unique(facts.map(([person]) => person));
-  const achievements = unique(facts.map(([, achievement]) => achievement));
-  return facts.flatMap(([person, achievement, sport], index) => [
-    [`Which athlete ${achievement}?`, person, pickDistractors(person, people, index)],
-    [`In ${sport}, who ${achievement}?`, person, pickDistractors(person, people, index + 3)],
-    [`${person} is associated with which achievement?`, achievement, pickDistractors(achievement, achievements, index)],
-    [`Which milestone belongs to ${person}?`, achievement, pickDistractors(achievement, achievements, index + 5)]
-  ]);
+  const bySport = groupRows(facts, ([, , sport]) => sport);
+  const personTemplates = [
+    ([person, achievement, sport]) => [`Which ${sport} figure ${achievement}?`, person],
+    ([person, achievement, sport]) => [`In ${sport}, who ${achievement}?`, person],
+    ([person, achievement, sport]) => [`The ${sport} milestone '${achievement}' belongs to whom?`, person],
+    ([person, achievement, sport]) => [`Which ${sport} name is linked with this achievement: ${achievement}?`, person],
+    ([person, achievement, sport]) => [`Who is the ${sport} answer for this milestone: ${achievement}?`, person],
+    ([person, achievement, sport]) => [`Which ${sport} competitor is known for having ${achievement}?`, person],
+    ([person, achievement, sport]) => [`Who achieved this in ${sport}: ${achievement}?`, person],
+    ([person, achievement, sport]) => [`Which ${sport} athlete should be matched to '${achievement}'?`, person],
+    ([person, achievement, sport]) => [`Name the ${sport} figure who ${achievement}.`, person],
+    ([person, achievement, sport]) => [`Which ${sport} player is connected to the record or feat '${achievement}'?`, person],
+    ([person, achievement, sport]) => [`Who is the correct ${sport} option for '${achievement}'?`, person],
+    ([person, achievement, sport]) => [`Which ${sport} athlete owns this trivia clue: ${achievement}?`, person]
+  ];
+  const achievementTemplates = [
+    ([person, achievement, sport]) => [`What ${sport} achievement is ${person} known for?`, achievement],
+    ([person, achievement, sport]) => [`Which milestone belongs to ${person} in ${sport}?`, achievement],
+    ([person, achievement, sport]) => [`In ${sport}, which feat is tied to ${person}?`, achievement],
+    ([person, achievement, sport]) => [`Which ${sport} record or achievement is associated with ${person}?`, achievement],
+    ([person, achievement, sport]) => [`What did ${person} do in ${sport}?`, achievement],
+    ([person, achievement, sport]) => [`Choose the ${sport} milestone linked to ${person}.`, achievement],
+    ([person, achievement, sport]) => [`Which statement best describes ${person}'s ${sport} achievement?`, achievement],
+    ([person, achievement, sport]) => [`What is ${person}'s notable ${sport} milestone?`, achievement],
+    ([person, achievement, sport]) => [`Which ${sport} feat should be matched with ${person}?`, achievement],
+    ([person, achievement, sport]) => [`What record or feat makes ${person} a ${sport} trivia answer?`, achievement],
+    ([person, achievement, sport]) => [`Which ${sport} achievement completes the clue for ${person}?`, achievement],
+    ([person, achievement, sport]) => [`What is the best ${sport} milestone match for ${person}?`, achievement]
+  ];
+
+  return facts.flatMap((fact, index) => {
+    const [, , sport] = fact;
+    const sportFacts = bySport.get(sport) || [];
+    const people = unique(sportFacts.map(([person]) => person));
+    const achievements = unique(sportFacts.map(([, achievement]) => achievement));
+    if (people.length < 4 || achievements.length < 4) return [];
+    const meta = { sportContext: sport, sportScopedOptions: true };
+    return [
+      ...personTemplates.map((template, templateIndex) => {
+        const [question, answer] = template(fact);
+        return [question, answer, pickDistractors(answer, people, index + templateIndex), meta];
+      }),
+      ...achievementTemplates.map((template, templateIndex) => {
+        const [question, answer] = template(fact);
+        return [question, answer, pickDistractors(answer, achievements, index + templateIndex), meta];
+      })
+    ];
+  });
 }
 
 function buildMusicRows() {
@@ -887,6 +940,15 @@ function pickDistractors(answer, pool, index) {
 
 function unique(values) {
   return [...new Set(values)];
+}
+
+function groupRows(rows, keyFn) {
+  const groups = new Map();
+  for (const row of rows) {
+    const key = keyFn(row);
+    groups.set(key, [...(groups.get(key) || []), row]);
+  }
+  return groups;
 }
 
 function list(block) {

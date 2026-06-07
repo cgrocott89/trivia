@@ -313,11 +313,11 @@ const QUESTION_SETS = {
 
 const EXPANDED_QUESTION_SETS = expandQuestionSets(QUESTION_SETS);
 
-const EASY_QUESTIONS_PER_CATEGORY = 175;
-const HARD_QUESTIONS_PER_CATEGORY = 80;
+const EASY_QUESTIONS_PER_CATEGORY = 300;
+const HARD_QUESTIONS_PER_CATEGORY = 1100;
 
 export const QUESTION_BANK = Object.entries(EXPANDED_QUESTION_SETS).flatMap(([category, rows]) => {
-  const questions = rows.map(([question, answer, distractors], index) => {
+  const questions = rows.map(([question, answer, distractors, meta = {}], index) => {
     const id = `${category}-${String(index + 1).padStart(3, "0")}`;
     return {
       id,
@@ -326,7 +326,8 @@ export const QUESTION_BANK = Object.entries(EXPANDED_QUESTION_SETS).flatMap(([ca
       options: rotateOptions([answer, ...distractors], index),
       answer,
       difficulty: "normal",
-      hardnessScore: getQuestionHardnessScore(category, question, answer, index)
+      hardnessScore: getQuestionHardnessScore(category, question, answer, meta),
+      ...meta
     };
   });
 
@@ -353,11 +354,14 @@ function assignDifficulties(questions) {
   }));
 }
 
-function getQuestionHardnessScore(category, question, answer, index) {
+function getQuestionHardnessScore(category, question, answer, meta) {
   const text = `${question} ${answer}`.toLowerCase();
   let score = 0;
 
-  if (category === "sport") score += scoreSportQuestion(text);
+  if (category === "sport") {
+    score += scoreSportQuestion(text);
+    score += meta.sportScopedOptions === true ? 20 : -20;
+  }
   if (category === "music") score += scoreMusicQuestion(text);
   if (category === "culture") score += scoreCultureQuestion(text);
   if (category === "general") score += scoreGeneralQuestion(text);
@@ -372,7 +376,7 @@ function getQuestionHardnessScore(category, question, answer, index) {
 
 function scoreSportQuestion(text) {
   let score = 0;
-  if (/which athlete|which milestone belongs|associated with which achievement|in .+, who/.test(text)) score += 6;
+  if (/which athlete|which milestone belongs|associated with which achievement|in .+, who|milestone|achievement|record or feat|trivia clue|notable/.test(text)) score += 8;
   if (/scored|won|became|played|set|finished|kicked|took|captained|rings|titles|medals|centuries|wickets|home runs|super bowl mvp/.test(text)) score += 5;
   if (/muttiah|larwood|bodyline|borg-warner|heisman|calcutta|dally m|brownlow|lance franklin|johnathan thurston|richie mccaw|jonah lomu|valentino rossi/.test(text)) score += 3;
   if (/how many points|how many players|which sport is .* best known|nickname belongs|what type of bowling/.test(text)) score -= 5;
