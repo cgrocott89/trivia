@@ -1,17 +1,19 @@
 :root {
   color-scheme: light;
-  --ink: #18212f;
-  --muted: #687386;
-  --line: #d7dde8;
-  --soft: #f4f6f9;
-  --paper: #ffffff;
-  --accent: #0f7c75;
-  --accent-dark: #0a5e59;
-  --warn: #b54708;
-  --good: #1a7f37;
-  --bad: #b42318;
-  --shadow: 0 14px 40px rgba(24, 33, 47, 0.12);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --ink: #26313f;
+  --muted: #667085;
+  --line: #d8cfc3;
+  --soft: #f6efe5;
+  --paper: #fffaf2;
+  --accent: #256d85;
+  --accent-dark: #17495a;
+  --accent-warm: #c46a2b;
+  --accent-soft: #e4f1f4;
+  --warn: #b45309;
+  --good: #2f855a;
+  --bad: #c0392b;
+  --shadow: 0 14px 38px rgba(38, 49, 63, 0.14);
+  font-family: Calibri, "Segoe UI", Arial, sans-serif;
 }
 
 * {
@@ -27,9 +29,9 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    linear-gradient(135deg, rgba(15, 124, 117, 0.13), transparent 34%),
-    linear-gradient(210deg, rgba(181, 71, 8, 0.1), transparent 30%),
-    #f7f8fb;
+    linear-gradient(135deg, rgba(37, 109, 133, 0.14), transparent 34%),
+    linear-gradient(210deg, rgba(196, 106, 43, 0.13), transparent 32%),
+    #f8f3ec;
   color: var(--ink);
 }
 
@@ -132,7 +134,39 @@ legend {
 
 .mode-option:has(input:checked) {
   border-color: var(--accent);
-  background: #eaf7f5;
+  background: var(--accent-soft);
+}
+
+.difficulty-fieldset {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.difficulty-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.difficulty-option {
+  display: grid;
+  gap: 8px;
+  min-height: 96px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--soft);
+  cursor: pointer;
+}
+
+.difficulty-option input {
+  justify-self: start;
+}
+
+.difficulty-option:has(input:checked) {
+  border-color: var(--accent-warm);
+  background: #fff3e6;
 }
 
 .mode-name {
@@ -285,7 +319,7 @@ legend {
 
 .answer-option:has(input:checked) {
   border-color: var(--accent);
-  background: #eaf7f5;
+  background: var(--accent-soft);
 }
 
 .submit-row {
@@ -380,7 +414,7 @@ legend {
 
 @media (max-width: 560px) {
   body {
-    background: #f7f8fb;
+    background: #f8f3ec;
   }
 
   .app-shell {
@@ -436,6 +470,7 @@ legend {
   }
 
   .mode-option,
+  .difficulty-option,
   .answer-option {
     grid-template-columns: 24px 1fr;
     min-height: 54px;
@@ -444,6 +479,7 @@ legend {
   }
 
   .mode-option input,
+  .difficulty-option input,
   .answer-option input {
     width: 18px;
     height: 18px;
@@ -452,6 +488,10 @@ legend {
 
   .mode-detail {
     font-size: 0.86rem;
+  }
+
+  .difficulty-grid {
+    grid-template-columns: 1fr;
   }
 
   .primary-button,

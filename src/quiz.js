@@ -5,6 +5,24 @@ export const CATEGORY_LABELS = {
   general: "General interest"
 };
 
+export const DIFFICULTY_LEVELS = [
+  {
+    id: "easy",
+    label: "Easy",
+    detail: "More familiar pub-trivia clues"
+  },
+  {
+    id: "normal",
+    label: "Normal",
+    detail: "Balanced pub-trivia difficulty"
+  },
+  {
+    id: "hard",
+    label: "Hard",
+    detail: "More specific names, places, and dates"
+  }
+];
+
 export const QUIZ_MODES = [
   {
     id: "mixed",
@@ -55,17 +73,22 @@ export function groupByCategory(questions) {
   }, {});
 }
 
-export function createQuiz(questions, modeId, random = Math.random) {
+export function createQuiz(questions, modeId, difficulty = "normal", random = Math.random) {
   const mode = QUIZ_MODES.find((item) => item.id === modeId);
   if (!mode) {
     throw new Error(`Unknown quiz mode: ${modeId}`);
   }
 
-  const grouped = groupByCategory(questions);
+  const level = DIFFICULTY_LEVELS.find((item) => item.id === difficulty);
+  if (!level) {
+    throw new Error(`Unknown difficulty: ${difficulty}`);
+  }
+
+  const grouped = groupByCategory(questions.filter((question) => question.difficulty === difficulty));
   const selected = Object.entries(mode.composition).flatMap(([category, count]) => {
     const candidates = grouped[category] || [];
     if (candidates.length < count) {
-      throw new Error(`Mode ${modeId} needs ${count} ${category} questions, but only ${candidates.length} exist.`);
+      throw new Error(`Mode ${modeId} at ${difficulty} needs ${count} ${category} questions, but only ${candidates.length} exist.`);
     }
     return shuffle(candidates, random).slice(0, count);
   });

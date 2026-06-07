@@ -321,7 +321,8 @@ export const QUESTION_BANK = Object.entries(EXPANDED_QUESTION_SETS).flatMap(([ca
       category,
       question,
       options: rotateOptions([answer, ...distractors], index),
-      answer
+      answer,
+      difficulty: getQuestionDifficulty(index)
     };
   })
 );
@@ -329,4 +330,8 @@ export const QUESTION_BANK = Object.entries(EXPANDED_QUESTION_SETS).flatMap(([ca
 function rotateOptions(options, index) {
   const offset = index % options.length;
   return [...options.slice(offset), ...options.slice(0, offset)];
+}
+
+function getQuestionDifficulty(index) {
+  return ["easy", "normal", "hard"][index % 3];
 }

@@ -12,6 +12,8 @@ The question bank contains 2,000 Australian-pub-trivia style questions: 500 spor
 - Culture only: 20 culture questions.
 - General interest only: 20 general-interest questions.
 
+Each mode supports Easy, Normal, and Hard difficulty.
+
 ## Local checks
 
 ```powershell

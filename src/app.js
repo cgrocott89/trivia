@@ -1,5 +1,5 @@
 import { QUESTION_BANK } from "./questions.js";
-import { CATEGORY_LABELS, QUIZ_MODES, createQuiz, scoreQuiz } from "./quiz.js";
+import { CATEGORY_LABELS, DIFFICULTY_LEVELS, QUIZ_MODES, createQuiz, scoreQuiz } from "./quiz.js";
 
 const QUIZ_SIZE = 20;
 
@@ -8,6 +8,7 @@ const quizView = document.querySelector("#quiz-view");
 const resultsView = document.querySelector("#results-view");
 const modeForm = document.querySelector("#mode-form");
 const modeOptions = document.querySelector("#mode-options");
+const difficultyOptions = document.querySelector("#difficulty-options");
 const quizForm = document.querySelector("#quiz-form");
 const quizModeLabel = document.querySelector("#quiz-mode-label");
 const quizTitle = document.querySelector("#quiz-title");
@@ -19,23 +20,24 @@ const scoreCopy = document.querySelector("#score-copy");
 const reviewList = document.querySelector("#review-list");
 
 let currentMode = "mixed";
+let currentDifficulty = "normal";
 let currentQuiz = [];
 let answers = {};
 
-renderModeOptions();
+renderSetupOptions();
 
 modeForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const data = new FormData(modeForm);
-  startQuiz(data.get("mode") || "mixed");
+  startQuiz(data.get("mode") || "mixed", data.get("difficulty") || "normal");
 });
 
 document.querySelector("#submit-quiz-button").addEventListener("click", submitQuiz);
 document.querySelector("#change-mode-button").addEventListener("click", showSetup);
 document.querySelector("#results-change-mode-button").addEventListener("click", showSetup);
-document.querySelector("#restart-button").addEventListener("click", () => startQuiz(currentMode));
+document.querySelector("#restart-button").addEventListener("click", () => startQuiz(currentMode, currentDifficulty));
 
-function renderModeOptions() {
+function renderSetupOptions() {
   modeOptions.innerHTML = QUIZ_MODES.map((mode) => `
     <label class="mode-option">
       <input type="radio" name="mode" value="${mode.id}" ${mode.id === currentMode ? "checked" : ""}>
@@ -45,16 +47,28 @@ function renderModeOptions() {
       </span>
     </label>
   `).join("");
+
+  difficultyOptions.innerHTML = DIFFICULTY_LEVELS.map((difficulty) => `
+    <label class="difficulty-option">
+      <input type="radio" name="difficulty" value="${difficulty.id}" ${difficulty.id === currentDifficulty ? "checked" : ""}>
+      <span>
+        <span class="mode-name">${difficulty.label}</span>
+        <span class="mode-detail">${difficulty.detail}</span>
+      </span>
+    </label>
+  `).join("");
 }
 
-function startQuiz(modeId) {
+function startQuiz(modeId, difficulty) {
   currentMode = modeId;
+  currentDifficulty = difficulty;
   answers = {};
   submitMessage.textContent = "";
-  currentQuiz = createQuiz(QUESTION_BANK, modeId);
+  currentQuiz = createQuiz(QUESTION_BANK, modeId, difficulty);
 
   const mode = QUIZ_MODES.find((item) => item.id === modeId);
-  quizModeLabel.textContent = mode.label;
+  const level = DIFFICULTY_LEVELS.find((item) => item.id === difficulty);
+  quizModeLabel.textContent = `${mode.label} - ${level.label}`;
   quizTitle.textContent = `${QUIZ_SIZE} questions`;
   renderQuiz();
   showView(quizView);
@@ -65,7 +79,7 @@ function renderQuiz() {
     <article class="question-card">
       <div class="question-meta">
         <span>Question ${question.quizNumber}</span>
-        <span>${CATEGORY_LABELS[question.category]}</span>
+        <span>${CATEGORY_LABELS[question.category]} - ${difficultyLabel(question.difficulty)}</span>
       </div>
       <h3>${escapeHtml(question.question)}</h3>
       <div class="answer-options">
@@ -120,7 +134,7 @@ function renderReview() {
       <article class="review-card ${isCorrect ? "correct" : "incorrect"}">
         <div class="question-meta">
           <span>Question ${question.quizNumber}</span>
-          <span>${CATEGORY_LABELS[question.category]} - ${isCorrect ? "Correct" : "Incorrect"}</span>
+          <span>${CATEGORY_LABELS[question.category]} - ${difficultyLabel(question.difficulty)} - ${isCorrect ? "Correct" : "Incorrect"}</span>
         </div>
         <h3>${escapeHtml(question.question)}</h3>
         <p class="review-answer"><strong>Your answer:</strong> ${escapeHtml(userAnswer)}</p>
@@ -138,9 +152,13 @@ function resultCopy(score) {
 }
 
 function showSetup() {
-  renderModeOptions();
+  renderSetupOptions();
   showView(setupView);
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function difficultyLabel(difficultyId) {
+  return DIFFICULTY_LEVELS.find((item) => item.id === difficultyId)?.label || difficultyId;
 }
 
 function showView(view) {

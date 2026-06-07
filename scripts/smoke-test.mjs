@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { QUESTION_BANK } from "../src/questions.js";
-import { QUIZ_MODES, createQuiz, scoreQuiz } from "../src/quiz.js";
+import { DIFFICULTY_LEVELS, QUIZ_MODES, createQuiz, scoreQuiz } from "../src/quiz.js";
 
 function categoryCounts(quiz) {
   return quiz.reduce((counts, question) => {
@@ -10,19 +10,23 @@ function categoryCounts(quiz) {
 }
 
 for (const mode of QUIZ_MODES) {
-  const quiz = createQuiz(QUESTION_BANK, mode.id, seededRandom(100 + mode.id.length));
-  assert.equal(quiz.length, 20, `${mode.id} should create 20 questions`);
-  assert.deepEqual(categoryCounts(quiz), mode.composition, `${mode.id} composition should match`);
+  for (const difficulty of DIFFICULTY_LEVELS) {
+    const quiz = createQuiz(QUESTION_BANK, mode.id, difficulty.id, seededRandom(100 + mode.id.length + difficulty.id.length));
+    assert.equal(quiz.length, 20, `${mode.id}/${difficulty.id} should create 20 questions`);
+    assert.deepEqual(categoryCounts(quiz), mode.composition, `${mode.id}/${difficulty.id} composition should match`);
+    assert.equal(new Set(quiz.map((question) => question.difficulty)).size, 1, `${mode.id}/${difficulty.id} should use one difficulty`);
+    assert.equal(quiz[0].difficulty, difficulty.id, `${mode.id}/${difficulty.id} should use requested difficulty`);
 
-  const correctAnswers = Object.fromEntries(quiz.map((question) => [question.id, question.answer]));
-  assert.equal(scoreQuiz(quiz, correctAnswers), 20, `${mode.id} should score perfect answers correctly`);
+    const correctAnswers = Object.fromEntries(quiz.map((question) => [question.id, question.answer]));
+    assert.equal(scoreQuiz(quiz, correctAnswers), 20, `${mode.id}/${difficulty.id} should score perfect answers correctly`);
 
-  const wrongAnswers = Object.fromEntries(quiz.map((question) => [question.id, firstWrongOption(question)]));
-  assert.equal(scoreQuiz(quiz, wrongAnswers), 0, `${mode.id} should score wrong answers correctly`);
+    const wrongAnswers = Object.fromEntries(quiz.map((question) => [question.id, firstWrongOption(question)]));
+    assert.equal(scoreQuiz(quiz, wrongAnswers), 0, `${mode.id}/${difficulty.id} should score wrong answers correctly`);
+  }
 }
 
-const firstMixed = createQuiz(QUESTION_BANK, "mixed", seededRandom(1)).map((question) => question.id).join(",");
-const secondMixed = createQuiz(QUESTION_BANK, "mixed", seededRandom(2)).map((question) => question.id).join(",");
+const firstMixed = createQuiz(QUESTION_BANK, "mixed", "normal", seededRandom(1)).map((question) => question.id).join(",");
+const secondMixed = createQuiz(QUESTION_BANK, "mixed", "normal", seededRandom(2)).map((question) => question.id).join(",");
 assert.notEqual(firstMixed, secondMixed, "Mixed quiz should vary with different random seeds");
 
 console.log("Smoke tests passed.");

@@ -1,5 +1,5 @@
 import { QUESTION_BANK } from "../src/questions.js";
-import { QUIZ_MODES } from "../src/quiz.js";
+import { DIFFICULTY_LEVELS, QUIZ_MODES } from "../src/quiz.js";
 
 const EXPECTED_CATEGORIES = ["sport", "music", "culture", "general"];
 const EXPECTED_PER_CATEGORY = 500;
@@ -8,6 +8,13 @@ const errors = [];
 const ids = new Set();
 const questionTexts = new Set();
 const counts = Object.fromEntries(EXPECTED_CATEGORIES.map((category) => [category, 0]));
+const difficultyIds = new Set(DIFFICULTY_LEVELS.map((difficulty) => difficulty.id));
+const difficultyCounts = Object.fromEntries(
+  EXPECTED_CATEGORIES.map((category) => [
+    category,
+    Object.fromEntries(DIFFICULTY_LEVELS.map((difficulty) => [difficulty.id, 0]))
+  ])
+);
 
 QUESTION_BANK.forEach((question, index) => {
   const label = question.id || `index ${index}`;
@@ -22,6 +29,13 @@ QUESTION_BANK.forEach((question, index) => {
     errors.push(`${label} has invalid category: ${question.category}`);
   } else {
     counts[question.category] += 1;
+    if (difficultyIds.has(question.difficulty)) {
+      difficultyCounts[question.category][question.difficulty] += 1;
+    }
+  }
+
+  if (!difficultyIds.has(question.difficulty)) {
+    errors.push(`${label} has invalid difficulty: ${question.difficulty}`);
   }
 
   if (!question.question || typeof question.question !== "string") {
@@ -44,9 +58,12 @@ for (const category of EXPECTED_CATEGORIES) {
 }
 
 for (const mode of QUIZ_MODES) {
-  for (const [category, needed] of Object.entries(mode.composition)) {
-    if ((counts[category] || 0) < needed) {
-      errors.push(`${mode.id} mode needs ${needed} ${category} questions, but only ${counts[category] || 0} exist.`);
+  for (const difficulty of DIFFICULTY_LEVELS) {
+    for (const [category, needed] of Object.entries(mode.composition)) {
+      const available = difficultyCounts[category]?.[difficulty.id] || 0;
+      if (available < needed) {
+        errors.push(`${mode.id} mode at ${difficulty.id} needs ${needed} ${category} questions, but only ${available} exist.`);
+      }
     }
   }
 }
@@ -62,3 +79,4 @@ if (errors.length > 0) {
 
 console.log("Question bank valid.");
 console.log(JSON.stringify(counts, null, 2));
+console.log(JSON.stringify(difficultyCounts, null, 2));
