@@ -37,11 +37,11 @@ function fillSupplementRows(baseRows, supplementRows, needed, category) {
   }
 
   const variants = [
-    (question) => `Pub trivia clue: ${question}`,
-    (question) => `Quickfire ${category}: ${question}`,
-    (question) => `Classic ${category} round: ${question}`,
-    (question) => `Bonus ${category} question: ${question}`,
-    (question) => `Quizmaster asks: ${question}`
+    (question) => rephraseQuestion(question, "Which answer best fits this clue"),
+    (question) => rephraseQuestion(question, "Choose the correct answer"),
+    (question) => rephraseQuestion(question, "What would you lock in for this one"),
+    (question) => rephraseQuestion(question, "Which option solves this question"),
+    (question) => rephraseQuestion(question, "What is the correct response")
   ];
 
   let variantIndex = 0;
@@ -60,6 +60,15 @@ function fillSupplementRows(baseRows, supplementRows, needed, category) {
   }
 
   return selected;
+}
+
+function rephraseQuestion(question, leadIn) {
+  const trimmed = question.endsWith("?") ? question.slice(0, -1) : question;
+  return `${leadIn}: ${lowerFirst(trimmed)}?`;
+}
+
+function lowerFirst(value) {
+  return value.charAt(0).toLowerCase() + value.slice(1);
 }
 
 function buildSportRows() {
@@ -270,7 +279,70 @@ Green jacket|Golf
 Borg-Warner Trophy|Motorsport
 `);
 
+  const milestones = list(`
+LeBron James|became the NBA's all-time leading scorer in 2023|basketball
+LeBron James|became the first player to reach 50,000 combined regular-season and playoff points|basketball
+Kareem Abdul-Jabbar|held the NBA career scoring record before LeBron James|basketball
+Michael Jordan|won six NBA championships with the Chicago Bulls|basketball
+Stephen Curry|became the NBA's all-time leader in made three-pointers|basketball
+Kobe Bryant|scored 81 points in a single NBA game in 2006|basketball
+Wilt Chamberlain|scored 100 points in a single NBA game|basketball
+Bill Russell|won 11 NBA championships as a player|basketball
+Serena Williams|won 23 Grand Slam singles titles|tennis
+Margaret Court|won 24 Grand Slam singles titles|tennis
+Roger Federer|won eight Wimbledon men's singles titles|tennis
+Rafael Nadal|won 14 French Open men's singles titles|tennis
+Novak Djokovic|completed a career Golden Masters in men's singles|tennis
+Steffi Graf|completed the 1988 Golden Slam|tennis
+Usain Bolt|set the men's 100 metre world record at 9.58 seconds|athletics
+Usain Bolt|set the men's 200 metre world record at 19.19 seconds|athletics
+Florence Griffith-Joyner|set the women's 100 metre world record at 10.49 seconds|athletics
+Eliud Kipchoge|ran the first sub-two-hour marathon distance under special conditions|athletics
+Michael Phelps|won 28 Olympic medals|swimming
+Michael Phelps|won eight gold medals at the 2008 Beijing Olympics|swimming
+Mark Spitz|won seven gold medals at the 1972 Munich Olympics|swimming
+Katie Ledecky|became famous for dominance in distance freestyle swimming|swimming
+Simone Biles|became the most decorated gymnast in World Championship history|gymnastics
+Nadia Comaneci|recorded the first perfect 10 in Olympic gymnastics|gymnastics
+Tom Brady|won seven Super Bowl rings as a player|American football
+Jerry Rice|became the NFL's career receiving yards leader|American football
+Peyton Manning|won Super Bowls with both the Colts and Broncos|American football
+Patrick Mahomes|won three Super Bowl MVP awards before turning 30|American football
+Barry Bonds|finished his MLB career with 762 home runs|baseball
+Hank Aaron|held MLB's career home run record before Barry Bonds|baseball
+Cal Ripken Jr.|played 2,632 consecutive Major League Baseball games|baseball
+Shohei Ohtani|became MLB's first 50-home run, 50-stolen base player|baseball
+Babe Ruth|was famous as both a pitcher and a home run hitter|baseball
+Wayne Gretzky|became the NHL's all-time points leader|ice hockey
+Alexander Ovechkin|broke Wayne Gretzky's NHL career goals record|ice hockey
+Miroslav Klose|scored a record 16 FIFA World Cup goals|football
+Pele|won three FIFA World Cups as a player|football
+Lionel Messi|won the 2022 FIFA World Cup with Argentina|football
+Cristiano Ronaldo|became the first men's player to score at five FIFA World Cups|football
+Marta|became the first player to score at five FIFA World Cups|football
+Sachin Tendulkar|became the first cricketer to score 100 international centuries|cricket
+Sachin Tendulkar|played a record 200 Test matches|cricket
+Brian Lara|scored 400 not out in a Test innings|cricket
+Muttiah Muralitharan|became the first bowler to take 800 Test wickets|cricket
+Shane Warne|took more than 700 Test wickets with leg spin|cricket
+Don Bradman|finished with a Test batting average of 99.94|cricket
+Lewis Hamilton|matched Michael Schumacher with seven Formula 1 world titles|Formula 1
+Michael Schumacher|won seven Formula 1 world championships|Formula 1
+Max Verstappen|won a record 19 Formula 1 races in the 2023 season|Formula 1
+Valentino Rossi|won seven premier-class motorcycle Grand Prix world titles|MotoGP
+Tiger Woods|completed the 'Tiger Slam' across 2000 and 2001|golf
+Jack Nicklaus|won a record 18 men's major golf championships|golf
+Kelly Slater|won 11 world surfing titles|surfing
+Lance Franklin|kicked his 1,000th AFL goal in 2022|Australian rules football
+Gary Ablett Jr.|won two Brownlow Medals|Australian rules football
+Cameron Smith|became the first NRL player to reach 400 first-grade games|rugby league
+Johnathan Thurston|won four Dally M Medals|rugby league
+Richie McCaw|captained New Zealand to Rugby World Cup wins in 2011 and 2015|rugby union
+Jonah Lomu|became a breakout star at the 1995 Rugby World Cup|rugby union
+`);
+
   return [
+    ...milestoneRows(milestones),
     ...rowsFrom(teamVenues, ([team]) => `Which venue is strongly associated with ${team}?`, ([, venue]) => venue, ([, venue]) => venue),
     ...rowsFrom(teamVenues, ([team, venue]) => `${venue} is strongly associated with which team?`, ([team]) => team, ([team]) => team),
     ...rowsFrom(athletes, ([athlete]) => `Which sport is ${athlete} best known for?`, ([, sport]) => sport, ([, sport]) => sport),
@@ -279,6 +351,17 @@ Borg-Warner Trophy|Motorsport
     ...rowsFrom(hosts, ([event]) => `Which city hosted the ${event}?`, ([, city]) => city, ([, city]) => city),
     ...rowsFrom(trophies, ([trophy]) => `The ${trophy} is associated with which sport?`, ([, sport]) => sport, ([, sport]) => sport)
   ];
+}
+
+function milestoneRows(facts) {
+  const people = unique(facts.map(([person]) => person));
+  const achievements = unique(facts.map(([, achievement]) => achievement));
+  return facts.flatMap(([person, achievement, sport], index) => [
+    [`Which athlete ${achievement}?`, person, pickDistractors(person, people, index)],
+    [`In ${sport}, who ${achievement}?`, person, pickDistractors(person, people, index + 3)],
+    [`${person} is associated with which achievement?`, achievement, pickDistractors(achievement, achievements, index)],
+    [`Which milestone belongs to ${person}?`, achievement, pickDistractors(achievement, achievements, index + 5)]
+  ]);
 }
 
 function buildMusicRows() {
@@ -435,10 +518,18 @@ US music industry awards|Grammy Awards
 
   return [
     ...rowsFrom(songArtists, ([song]) => `Which artist released '${song}'?`, ([, artist]) => artist, ([, artist]) => artist),
+    ...rowsFrom(songArtists, ([song]) => `'${song}' is best associated with which artist?`, ([, artist]) => artist, ([, artist]) => artist),
+    ...rowsFrom(songArtists, ([song]) => `Who had a hit with the song '${song}'?`, ([, artist]) => artist, ([, artist]) => artist),
     ...rowsFrom(songArtists, ([song, artist]) => `Which song was a hit for ${artist}?`, ([song]) => song, ([song]) => song),
+    ...rowsFrom(songArtists, ([song, artist]) => `${artist} is strongly associated with which track titled '${song}'?`, ([song]) => song, ([song]) => song),
     ...rowsFrom(albumArtists, ([album]) => `Which artist released the album '${album}'?`, ([, artist]) => artist, ([, artist]) => artist),
+    ...rowsFrom(albumArtists, ([album]) => `'${album}' is an album by which act?`, ([, artist]) => artist, ([, artist]) => artist),
     ...rowsFrom(albumArtists, ([album, artist]) => `Which album is associated with ${artist}?`, ([album]) => album, ([album]) => album),
+    ...rowsFrom(albumArtists, ([album, artist]) => `${artist} released which album named '${album}'?`, ([album]) => album, ([album]) => album),
     ...rowsFrom(leadSingers, ([band]) => `Who was the lead singer of ${band}?`, ([, singer]) => singer, ([, singer]) => singer),
+    ...rowsFrom(leadSingers, ([band]) => `${band} is closely associated with which frontperson?`, ([, singer]) => singer, ([, singer]) => singer),
+    ...rowsFrom(leadSingers, ([band, singer]) => `${singer} fronted which band?`, ([band]) => band, ([band]) => band),
+    ...rowsFrom(facts, ([prompt]) => `In music trivia, what matches this clue: ${prompt}?`, ([, answer]) => answer, ([, answer]) => answer),
     ...rowsFrom(facts, ([prompt]) => `Which answer fits this music clue: ${prompt}?`, ([, answer]) => answer, ([, answer]) => answer)
   ];
 }
@@ -586,11 +677,21 @@ Hollywood sign original wording|Hollywoodland
 
   return [
     ...rowsFrom(filmDirectors, ([film]) => `Who directed '${film}'?`, ([, director]) => director, ([, director]) => director),
+    ...rowsFrom(filmDirectors, ([film]) => `Which filmmaker directed '${film}'?`, ([, director]) => director, ([, director]) => director),
+    ...rowsFrom(filmDirectors, ([film]) => `Name the director of '${film}'.`, ([, director]) => director, ([, director]) => director),
     ...rowsFrom(filmDirectors, ([film, director]) => `Which film is associated with director ${director}?`, ([film]) => film, ([film]) => film),
+    ...rowsFrom(filmDirectors, ([film, director]) => `${director} directed which film titled '${film}'?`, ([film]) => film, ([film]) => film),
     ...rowsFrom(books, ([book]) => `Who wrote '${book}'?`, ([, author]) => author, ([, author]) => author),
+    ...rowsFrom(books, ([book]) => `Which author wrote the book '${book}'?`, ([, author]) => author, ([, author]) => author),
     ...rowsFrom(books, ([book, author]) => `Which book is by ${author}?`, ([book]) => book, ([book]) => book),
+    ...rowsFrom(books, ([book, author]) => `${author} wrote which work titled '${book}'?`, ([book]) => book, ([book]) => book),
     ...rowsFrom(tvSettings, ([show]) => `Where is '${show}' primarily set?`, ([, setting]) => setting, ([, setting]) => setting),
+    ...rowsFrom(tvSettings, ([show, setting]) => `Which TV show is primarily set in ${setting}?`, ([show]) => show, ([show]) => show),
+    ...rowsFrom(tvSettings, ([show]) => `The setting of '${show}' is most associated with which place?`, ([, setting]) => setting, ([, setting]) => setting),
     ...rowsFrom(characters, ([character]) => `Which actor played ${character}?`, ([, actor]) => actor, ([, actor]) => actor),
+    ...rowsFrom(characters, ([character, actor]) => `${actor} played which character?`, ([character]) => character, ([character]) => character),
+    ...rowsFrom(characters, ([character]) => `Who is the performer behind ${character}?`, ([, actor]) => actor, ([, actor]) => actor),
+    ...rowsFrom(facts, ([prompt]) => `What completes this film, TV, or book clue: ${prompt}?`, ([, answer]) => answer, ([, answer]) => answer),
     ...rowsFrom(facts, ([prompt]) => `Which answer fits this culture clue: ${prompt}?`, ([, answer]) => answer, ([, answer]) => answer)
   ];
 }
@@ -747,12 +848,23 @@ Washington|Olympia
 
   return [
     ...rowsFrom(capitals, ([country]) => `What is the capital of ${country}?`, ([, capital]) => capital, ([, capital]) => capital),
+    ...rowsFrom(capitals, ([country]) => `Which city serves as the capital of ${country}?`, ([, capital]) => capital, ([, capital]) => capital),
+    ...rowsFrom(capitals, ([country]) => `Name the capital city of ${country}.`, ([, capital]) => capital, ([, capital]) => capital),
     ...rowsFrom(capitals, ([country, capital]) => `${capital} is the capital of which country?`, ([country]) => country, ([country]) => country),
+    ...rowsFrom(capitals, ([country, capital]) => `Which country has ${capital} as its capital?`, ([country]) => country, ([country]) => country),
     ...rowsFrom(landmarks, ([landmark]) => `Which country is home to ${landmark}?`, ([, country]) => country, ([, country]) => country),
+    ...rowsFrom(landmarks, ([landmark]) => `${landmark} is found in which country?`, ([, country]) => country, ([, country]) => country),
     ...rowsFrom(landmarks, ([landmark, country]) => `Which landmark is in ${country}?`, ([landmark]) => landmark, ([landmark]) => landmark),
+    ...rowsFrom(landmarks, ([landmark, country]) => `${country} is home to which landmark?`, ([landmark]) => landmark, ([landmark]) => landmark),
     ...rowsFrom(rivers, ([city]) => `Which river flows through ${city}?`, ([, river]) => river, ([, river]) => river),
+    ...rowsFrom(rivers, ([city, river]) => `${river} flows through which city?`, ([city]) => city, ([city]) => city),
+    ...rowsFrom(rivers, ([city]) => `Name the river most associated with ${city}.`, ([, river]) => river, ([, river]) => river),
     ...rowsFrom(countries, ([place]) => `Which country is associated with ${place}?`, ([, country]) => country, ([, country]) => country),
+    ...rowsFrom(countries, ([place]) => `${place} is in, or strongly associated with, which country?`, ([, country]) => country, ([, country]) => country),
+    ...rowsFrom(countries, ([place, country]) => `Which place is associated with ${country}?`, ([place]) => place, ([place]) => place),
     ...rowsFrom(currencies, ([country]) => `What currency is used in ${country}?`, ([, currency]) => currency, ([, currency]) => currency),
+    ...rowsFrom(currencies, ([country]) => `Which currency would you use in ${country}?`, ([, currency]) => currency, ([, currency]) => currency),
+    ...rowsFrom(currencies, ([country, currency]) => `The ${currency} is used in which country?`, ([country]) => country, ([country]) => country),
     ...rowsFrom(stateCapitals, ([state]) => `What is the capital of the U.S. state of ${state}?`, ([, capital]) => capital, ([, capital]) => capital)
   ];
 }
