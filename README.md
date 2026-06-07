@@ -2,6 +2,8 @@
 
 A static GitHub Pages trivia site with 20-question multiple-choice quizzes.
 
+The question bank contains 300 Australian-pub-trivia style questions: 75 sport, 75 music, 75 culture, and 75 general interest.
+
 ## Quiz modes
 
 - Mixed: 2 sport, 2 music, 4 culture, 12 general interest.

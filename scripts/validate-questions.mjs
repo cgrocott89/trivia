@@ -2,7 +2,7 @@ import { QUESTION_BANK } from "../src/questions.js";
 import { QUIZ_MODES } from "../src/quiz.js";
 
 const EXPECTED_CATEGORIES = ["sport", "music", "culture", "general"];
-const EXPECTED_PER_CATEGORY = 50;
+const EXPECTED_PER_CATEGORY = 75;
 
 const errors = [];
 const ids = new Set();
