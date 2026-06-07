@@ -313,8 +313,11 @@ const QUESTION_SETS = {
 
 const EXPANDED_QUESTION_SETS = expandQuestionSets(QUESTION_SETS);
 
-export const QUESTION_BANK = Object.entries(EXPANDED_QUESTION_SETS).flatMap(([category, rows]) =>
-  rows.map(([question, answer, distractors], index) => {
+const EASY_QUESTIONS_PER_CATEGORY = 175;
+const HARD_QUESTIONS_PER_CATEGORY = 80;
+
+export const QUESTION_BANK = Object.entries(EXPANDED_QUESTION_SETS).flatMap(([category, rows]) => {
+  const questions = rows.map(([question, answer, distractors], index) => {
     const id = `${category}-${String(index + 1).padStart(3, "0")}`;
     return {
       id,
@@ -322,16 +325,92 @@ export const QUESTION_BANK = Object.entries(EXPANDED_QUESTION_SETS).flatMap(([ca
       question,
       options: rotateOptions([answer, ...distractors], index),
       answer,
-      difficulty: getQuestionDifficulty(index)
+      difficulty: "normal",
+      hardnessScore: getQuestionHardnessScore(category, question, answer, index)
     };
-  })
-);
+  });
+
+  return assignDifficulties(questions).map(({ hardnessScore, ...question }) => question);
+});
 
 function rotateOptions(options, index) {
   const offset = index % options.length;
   return [...options.slice(offset), ...options.slice(0, offset)];
 }
 
-function getQuestionDifficulty(index) {
-  return ["easy", "normal", "hard"][index % 3];
+function assignDifficulties(questions) {
+  const ranked = [...questions].sort((a, b) => {
+    if (a.hardnessScore !== b.hardnessScore) return a.hardnessScore - b.hardnessScore;
+    return a.id.localeCompare(b.id);
+  });
+
+  const easyIds = new Set(ranked.slice(0, EASY_QUESTIONS_PER_CATEGORY).map((question) => question.id));
+  const hardIds = new Set(ranked.slice(-HARD_QUESTIONS_PER_CATEGORY).map((question) => question.id));
+
+  return questions.map((question) => ({
+    ...question,
+    difficulty: hardIds.has(question.id) ? "hard" : easyIds.has(question.id) ? "easy" : "normal"
+  }));
+}
+
+function getQuestionHardnessScore(category, question, answer, index) {
+  const text = `${question} ${answer}`.toLowerCase();
+  let score = 0;
+
+  if (category === "sport") score += scoreSportQuestion(text);
+  if (category === "music") score += scoreMusicQuestion(text);
+  if (category === "culture") score += scoreCultureQuestion(text);
+  if (category === "general") score += scoreGeneralQuestion(text);
+
+  if (category !== "general" && /\b(19|20)\d{2}\b/.test(text)) score += 2;
+  if (category !== "general" && /\b\d{2,3}(,\d{3})?\b/.test(text)) score += 2;
+  if (/record|all-time|milestone|first|most|career|world championship|world record|olympic record/.test(text)) score += 3;
+  if (/which answer fits|what matches this clue|what completes this/.test(text)) score += 1;
+
+  return score;
+}
+
+function scoreSportQuestion(text) {
+  let score = 0;
+  if (/which athlete|which milestone belongs|associated with which achievement|in .+, who/.test(text)) score += 6;
+  if (/scored|won|became|played|set|finished|kicked|took|captained|rings|titles|medals|centuries|wickets|home runs|super bowl mvp/.test(text)) score += 5;
+  if (/muttiah|larwood|bodyline|borg-warner|heisman|calcutta|dally m|brownlow|lance franklin|johnathan thurston|richie mccaw|jonah lomu|valentino rossi/.test(text)) score += 3;
+  if (/how many points|how many players|which sport is .* best known|nickname belongs|what type of bowling/.test(text)) score -= 5;
+  if (/michael jordan|serena williams|usain bolt|tom brady|lebron james|tiger woods|lionel messi|cristiano ronaldo/.test(text)) score -= 1;
+  return score;
+}
+
+function scoreMusicQuestion(text) {
+  let score = 0;
+  if (/composer|nobel prize|pulitzer|motown|woodstock|bond theme|eurovision|grammy|aria awards/.test(text)) score += 6;
+  if (/frontperson|fronted/.test(text)) score += 3;
+  if (/lead singer/.test(text)) score += 1;
+  if (/album|released which album|associated with which album/.test(text)) score += 1;
+  if (/the beatles|queen|michael jackson|madonna|taylor swift|beyonce|abba|kylie minogue|ac\/dc/.test(text)) score -= 2;
+  if (/adele|21|1989|thriller|nevermind|purple rain|rehab|rolling in the deep|like a virgin|smells like teen spirit|blank space|shake it off/.test(text)) score -= 4;
+  if (/triple j|aria awards|australian music|australian idol|pub with no beer|inxs|cold chisel|solid rock|throw your arms|dance monkey/.test(text)) score -= 4;
+  if (/which artist released|who had a hit with/.test(text)) score -= 1;
+  return score;
+}
+
+function scoreCultureQuestion(text) {
+  let score = 0;
+  if (/director|filmmaker|author|wrote|narrator|official award name|original wording|address/.test(text)) score += 4;
+  if (/which film is associated|which book is by|played which character|performer behind/.test(text)) score += 2;
+  if (/steven spielberg|james cameron|quentin tarantino|christopher nolan|francis ford coppola|martin scorsese|ridley scott|jaws|titanic|pulp fiction|inception|the godfather|goodfellas|alien/.test(text)) score -= 4;
+  if (/friends|the simpsons|harry potter|star wars|james bond|breaking bad|the office|bluey/.test(text)) score -= 2;
+  if (/coffee shop|hometown|agent number|time machine/.test(text)) score -= 2;
+  return score;
+}
+
+function scoreGeneralQuestion(text) {
+  let score = 0;
+  if (/u\.s\. state|capital of the u\.s\. state|strait|longest river in europe|lake baikal|marrakech|petra|angkor wat|galapagos|victoria falls|tropic|vltava|chao phraya|huangpu|douro|potomac/.test(text)) score += 5;
+  if (/currency|which currency|is used in which country/.test(text)) score += 1;
+  if (/capital of canada|capital of new zealand|capital of australia|capital of japan|capital of france|capital of germany|eiffel tower|statue of liberty|grand canyon|mount fuji|which river flows through london|which river flows through paris|which river flows through rome/.test(text)) score -= 4;
+  if (/australia's longest river|australia's currency|decimal currency|first fleet|federate|anzac day|australia day|how many states|capital city of australia/.test(text)) score -= 5;
+  if (/emergency phone number|internet country-code|international telephone|how many states/.test(text)) score -= 4;
+  if (/which country has|serves as the capital|name the capital/.test(text)) score += 1;
+  if (/david warren|graeme clark|howard florey|royal flying doctor|tropic of capricorn/.test(text)) score += 3;
+  return score;
 }
