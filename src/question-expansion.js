@@ -328,9 +328,16 @@ Roger Federer|won eight Wimbledon men's singles titles|tennis
 Rafael Nadal|won 14 French Open men's singles titles|tennis
 Novak Djokovic|completed a career Golden Masters in men's singles|tennis
 Steffi Graf|completed the 1988 Golden Slam|tennis
+Martina Navratilova|won 18 Grand Slam singles titles|tennis
+Billie Jean King|won 39 Grand Slam titles across singles, doubles and mixed doubles|tennis
+Iga Swiatek|won the 2020 French Open as an unseeded teenager|tennis
 Usain Bolt|set the men's 100 metre world record at 9.58 seconds|athletics
 Usain Bolt|set the men's 200 metre world record at 19.19 seconds|athletics
 Florence Griffith-Joyner|set the women's 100 metre world record at 10.49 seconds|athletics
+Shelly-Ann Fraser-Pryce|won Olympic 100 metres gold in 2008 and 2012|athletics
+Allyson Felix|became the most decorated American track and field Olympian|athletics
+Jackie Joyner-Kersee|won two Olympic heptathlon gold medals|athletics
+Fanny Blankers-Koen|won four athletics gold medals at the 1948 Olympics|athletics
 Eliud Kipchoge|ran the first sub-two-hour marathon distance under special conditions|athletics
 Michael Phelps|won 28 Olympic medals|swimming
 Michael Phelps|won eight gold medals at the 2008 Beijing Olympics|swimming
@@ -354,6 +361,10 @@ Pele|won three FIFA World Cups as a player|football
 Lionel Messi|won the 2022 FIFA World Cup with Argentina|football
 Cristiano Ronaldo|became the first men's player to score at five FIFA World Cups|football
 Marta|became the first player to score at five FIFA World Cups|football
+Mia Hamm|won two FIFA Women's World Cups with the United States|football
+Megan Rapinoe|won the Golden Ball at the 2019 FIFA Women's World Cup|football
+Alex Morgan|scored five goals in one match at the 2019 FIFA Women's World Cup|football
+Christine Sinclair|became international football's all-time leading goalscorer|football
 Sachin Tendulkar|became the first cricketer to score 100 international centuries|cricket
 Sachin Tendulkar|played a record 200 Test matches|cricket
 Brian Lara|scored 400 not out in a Test innings|cricket
@@ -364,6 +375,10 @@ Lewis Hamilton|matched Michael Schumacher with seven Formula 1 world titles|Form
 Michael Schumacher|won seven Formula 1 world championships|Formula 1
 Max Verstappen|won a record 19 Formula 1 races in the 2023 season|Formula 1
 Ayrton Senna|won three Formula 1 world championships with McLaren|Formula 1
+Sebastian Vettel|won four consecutive Formula 1 world championships from 2010 to 2013|Formula 1
+Fernando Alonso|won Formula 1 world championships in 2005 and 2006|Formula 1
+Alain Prost|won four Formula 1 world championships|Formula 1
+Niki Lauda|won three Formula 1 world championships|Formula 1
 Valentino Rossi|won seven premier-class motorcycle Grand Prix world titles|MotoGP
 Tiger Woods|completed the 'Tiger Slam' across 2000 and 2001|golf
 Jack Nicklaus|won a record 18 men's major golf championships|golf
@@ -461,13 +476,14 @@ Sally Pearson|won Olympic 100 metres hurdles gold at London 2012|Australian Olym
 }
 
 function milestoneRows(facts) {
-  const typedFacts = facts.map(([subject, achievement, sport, entityType]) => [
+  const typedFacts = facts.map(([subject, achievement, sport, entityType, gender]) => [
     subject,
     achievement,
     sport,
-    entityType || "person"
+    entityType || "person",
+    gender || inferSportFactGender(subject, achievement, sport, entityType || "person")
   ]);
-  const bySportAndType = groupRows(typedFacts, ([, , sport, entityType]) => `${sport}|${entityType}`);
+  const bySportAndType = groupRows(typedFacts, ([, , sport, entityType, gender]) => `${sport}|${entityType}|${gender}`);
   const subjectTemplates = [
     ([subject, achievement, sport], noun) => [`Which ${sport} ${noun} ${achievement}?`, subject],
     ([subject, achievement, sport], noun) => [`In ${sport}, which ${noun} is linked to this achievement: ${achievement}?`, subject],
@@ -498,22 +514,24 @@ function milestoneRows(facts) {
   ];
 
   return typedFacts.flatMap((fact, index) => {
-    const [person, achievement, sport, entityType] = fact;
-    const sportFacts = bySportAndType.get(`${sport}|${entityType}`) || [];
+    const [person, achievement, sport, entityType, gender] = fact;
+    const sportFacts = bySportAndType.get(`${sport}|${entityType}|${gender}`) || [];
     const people = unique(sportFacts.map(([person]) => person));
     const achievements = unique(sportFacts.map(([, achievement]) => achievement));
     if (people.length < 4 || achievements.length < 4) return [];
+    const forbiddenPeople = mentionedPoolItems(achievement, people).filter((item) => item !== person);
     const meta = (subject) => ({
       sportContext: sport,
       sportEntityType: entityType,
+      sportGender: gender,
       sportScopedOptions: true,
       subject,
-      factKey: `sport-milestone|${normalizeText(sport)}|${entityType}|${normalizeText(person)}|${normalizeText(achievement)}`
+      factKey: `sport-milestone|${normalizeText(sport)}|${entityType}|${gender}|${normalizeText(person)}|${normalizeText(achievement)}`
     });
     const subjectNoun = entityType === "team" ? "side" : "name";
     const subjectRows = subjectTemplates.map((template, templateIndex) => {
         const [question, answer] = template(fact, subjectNoun);
-        return [question, answer, pickDistractors(answer, people, index + templateIndex), meta(answer)];
+        return [question, answer, pickDistractors(answer, people, index + templateIndex, forbiddenPeople), meta(answer)];
       });
     const safeAchievements = achievements.filter((item) => !containsText(item, person));
     const achievementRows = safeAchievements.length < 4 ? [] : achievementTemplates.map((template, templateIndex) => {
@@ -522,6 +540,60 @@ function milestoneRows(facts) {
       });
     return [...subjectRows, ...achievementRows];
   });
+}
+
+const FEMALE_SPORT_SUBJECTS = new Set([
+  "Diana Taurasi",
+  "Lisa Leslie",
+  "Sue Bird",
+  "Lauren Jackson",
+  "Serena Williams",
+  "Margaret Court",
+  "Steffi Graf",
+  "Martina Navratilova",
+  "Billie Jean King",
+  "Iga Swiatek",
+  "Florence Griffith-Joyner",
+  "Shelly-Ann Fraser-Pryce",
+  "Allyson Felix",
+  "Jackie Joyner-Kersee",
+  "Fanny Blankers-Koen",
+  "Katie Ledecky",
+  "Simone Biles",
+  "Nadia Comaneci",
+  "Marta",
+  "Mia Hamm",
+  "Megan Rapinoe",
+  "Alex Morgan",
+  "Christine Sinclair",
+  "Annika Sorenstam",
+  "Erin Phillips",
+  "Liz Ellis",
+  "Caitlin Bassett",
+  "Irene van Dyk",
+  "Sharelle McMahon",
+  "Laura Geitz",
+  "Gretel Bueta",
+  "Cathy Freeman",
+  "Emma McKeon",
+  "Dawn Fraser",
+  "Betty Cuthbert",
+  "Ariarne Titmus",
+  "Jessica Fox",
+  "Anna Meares",
+  "Sally Pearson"
+]);
+
+function inferSportFactGender(subject, achievement, sport, entityType) {
+  if (entityType !== "person") return "team";
+  const text = normalizeText(`${subject} ${achievement} ${sport}`);
+  if (FEMALE_SPORT_SUBJECTS.has(subject) || /\b(women|woman|female|wnba|aflw|netball)\b/.test(text)) return "female";
+  if (/\b(men|mens|male|nba|nfl|mlb|nhl|nrl)\b/.test(text)) return "male";
+  return "open";
+}
+
+function mentionedPoolItems(text, pool) {
+  return pool.filter((item) => containsText(text, item));
 }
 
 function buildMusicRows() {
@@ -680,15 +752,15 @@ US music industry awards|Grammy Awards
     ...rowsFrom(songArtists, ([song]) => `Which artist released '${song}'?`, ([, artist]) => artist, ([, artist]) => artist),
     ...rowsFrom(songArtists, ([song]) => `'${song}' is best associated with which artist?`, ([, artist]) => artist, ([, artist]) => artist),
     ...rowsFrom(songArtists, ([song]) => `Who had a hit with the song '${song}'?`, ([, artist]) => artist, ([, artist]) => artist),
-    ...rowsFrom(songArtists, ([song, artist]) => `Which song was a hit for ${artist}?`, ([song]) => song, ([song]) => song),
-    ...rowsFrom(songArtists, ([song, artist]) => `${artist} is strongly associated with which track titled '${song}'?`, ([song]) => song, ([song]) => song),
+    ...rowsFrom(songArtists, ([song, artist]) => `Which song was a hit for ${artist}?`, ([song]) => song, ([song]) => song, sameGroupValues(songArtists, ([, artist]) => artist, ([song]) => song)),
+    ...rowsFrom(songArtists, ([song, artist]) => `${artist} is strongly associated with which track titled '${song}'?`, ([song]) => song, ([song]) => song, sameGroupValues(songArtists, ([, artist]) => artist, ([song]) => song)),
     ...rowsFrom(albumArtists, ([album]) => `Which artist released the album '${album}'?`, ([, artist]) => artist, ([, artist]) => artist),
     ...rowsFrom(albumArtists, ([album]) => `'${album}' is an album by which act?`, ([, artist]) => artist, ([, artist]) => artist),
-    ...rowsFrom(albumArtists, ([album, artist]) => `Which album is associated with ${artist}?`, ([album]) => album, ([album]) => album),
-    ...rowsFrom(albumArtists, ([album, artist]) => `${artist} released which album named '${album}'?`, ([album]) => album, ([album]) => album),
+    ...rowsFrom(albumArtists, ([album, artist]) => `Which album is associated with ${artist}?`, ([album]) => album, ([album]) => album, sameGroupValues(albumArtists, ([, artist]) => artist, ([album]) => album)),
+    ...rowsFrom(albumArtists, ([album, artist]) => `${artist} released which album named '${album}'?`, ([album]) => album, ([album]) => album, sameGroupValues(albumArtists, ([, artist]) => artist, ([album]) => album)),
     ...rowsFrom(leadSingers, ([band]) => `Who was the lead singer of ${band}?`, ([, singer]) => singer, ([, singer]) => singer),
     ...rowsFrom(leadSingers, ([band]) => `${band} is closely associated with which frontperson?`, ([, singer]) => singer, ([, singer]) => singer),
-    ...rowsFrom(leadSingers, ([band, singer]) => `${singer} fronted which band?`, ([band]) => band, ([band]) => band),
+    ...rowsFrom(leadSingers, ([band, singer]) => `${singer} fronted which band?`, ([band]) => band, ([band]) => band, sameGroupValues(leadSingers, ([, singer]) => singer, ([band]) => band)),
     ...rowsFrom(facts, ([prompt]) => `In music trivia, what matches this clue: ${prompt}?`, ([, answer]) => answer, ([, answer]) => answer),
     ...rowsFrom(facts, ([prompt]) => `Which answer fits this music clue: ${prompt}?`, ([, answer]) => answer, ([, answer]) => answer)
   ];
@@ -839,17 +911,17 @@ Hollywood sign original wording|Hollywoodland
     ...rowsFrom(filmDirectors, ([film]) => `Who directed '${film}'?`, ([, director]) => director, ([, director]) => director),
     ...rowsFrom(filmDirectors, ([film]) => `Which filmmaker directed '${film}'?`, ([, director]) => director, ([, director]) => director),
     ...rowsFrom(filmDirectors, ([film]) => `Name the director of '${film}'.`, ([, director]) => director, ([, director]) => director),
-    ...rowsFrom(filmDirectors, ([film, director]) => `Which film is associated with director ${director}?`, ([film]) => film, ([film]) => film),
-    ...rowsFrom(filmDirectors, ([film, director]) => `${director} directed which film titled '${film}'?`, ([film]) => film, ([film]) => film),
+    ...rowsFrom(filmDirectors, ([film, director]) => `Which film is associated with director ${director}?`, ([film]) => film, ([film]) => film, sameGroupValues(filmDirectors, ([, director]) => director, ([film]) => film)),
+    ...rowsFrom(filmDirectors, ([film, director]) => `${director} directed which film titled '${film}'?`, ([film]) => film, ([film]) => film, sameGroupValues(filmDirectors, ([, director]) => director, ([film]) => film)),
     ...rowsFrom(books, ([book]) => `Who wrote '${book}'?`, ([, author]) => author, ([, author]) => author),
     ...rowsFrom(books, ([book]) => `Which author wrote the book '${book}'?`, ([, author]) => author, ([, author]) => author),
-    ...rowsFrom(books, ([book, author]) => `Which book is by ${author}?`, ([book]) => book, ([book]) => book),
-    ...rowsFrom(books, ([book, author]) => `${author} wrote which work titled '${book}'?`, ([book]) => book, ([book]) => book),
+    ...rowsFrom(books, ([book, author]) => `Which book is by ${author}?`, ([book]) => book, ([book]) => book, sameGroupValues(books, ([, author]) => author, ([book]) => book)),
+    ...rowsFrom(books, ([book, author]) => `${author} wrote which work titled '${book}'?`, ([book]) => book, ([book]) => book, sameGroupValues(books, ([, author]) => author, ([book]) => book)),
     ...rowsFrom(tvSettings, ([show]) => `Where is '${show}' primarily set?`, ([, setting]) => setting, ([, setting]) => setting),
-    ...rowsFrom(tvSettings, ([show, setting]) => `Which TV show is primarily set in ${setting}?`, ([show]) => show, ([show]) => show),
+    ...rowsFrom(tvSettings, ([show, setting]) => `Which TV show is primarily set in ${setting}?`, ([show]) => show, ([show]) => show, sameGroupValues(tvSettings, ([, setting]) => setting, ([show]) => show)),
     ...rowsFrom(tvSettings, ([show]) => `The setting of '${show}' is most associated with which place?`, ([, setting]) => setting, ([, setting]) => setting),
     ...rowsFrom(characters, ([character]) => `Which actor played ${character}?`, ([, actor]) => actor, ([, actor]) => actor),
-    ...rowsFrom(characters, ([character, actor]) => `${actor} played which character?`, ([character]) => character, ([character]) => character),
+    ...rowsFrom(characters, ([character, actor]) => `${actor} played which character?`, ([character]) => character, ([character]) => character, sameGroupValues(characters, ([, actor]) => actor, ([character]) => character)),
     ...rowsFrom(characters, ([character]) => `Who is the performer behind ${character}?`, ([, actor]) => actor, ([, actor]) => actor),
     ...rowsFrom(facts, ([prompt]) => `What completes this film, TV, or book clue: ${prompt}?`, ([, answer]) => answer, ([, answer]) => answer),
     ...rowsFrom(facts, ([prompt]) => `Which answer fits this culture clue: ${prompt}?`, ([, answer]) => answer, ([, answer]) => answer)
@@ -857,184 +929,269 @@ Hollywood sign original wording|Hollywoodland
 }
 
 function buildGeneralRows() {
-  const capitals = list(`
-Canada|Ottawa
-New Zealand|Wellington
-Brazil|Brasilia
-Iceland|Reykjavik
-Japan|Tokyo
-China|Beijing
-India|New Delhi
-Indonesia|Jakarta
-Thailand|Bangkok
-Vietnam|Hanoi
-South Korea|Seoul
-United States|Washington, D.C.
-Mexico|Mexico City
-Argentina|Buenos Aires
-Chile|Santiago
-Peru|Lima
-Colombia|Bogota
-Egypt|Cairo
-Morocco|Rabat
-South Africa|Pretoria
-Kenya|Nairobi
-Nigeria|Abuja
-Turkey|Ankara
-Greece|Athens
-Italy|Rome
-Spain|Madrid
-Portugal|Lisbon
-France|Paris
-Germany|Berlin
-Netherlands|Amsterdam
-Belgium|Brussels
-Switzerland|Bern
-Austria|Vienna
-Czech Republic|Prague
-Poland|Warsaw
-Norway|Oslo
-Sweden|Stockholm
-Finland|Helsinki
-Denmark|Copenhagen
-Ireland|Dublin
+  const historyEvents = list(`
+World War I|began after the 1914 assassination of Archduke Franz Ferdinand in Sarajevo|Britannica World War I
+the French Revolution|is strongly linked with the storming of the Bastille in 1789|Britannica Bastille
+the Industrial Revolution|first took hold in Britain in the 18th century|Britannica Industrial Revolution
+Apollo 11|landed humans on the Moon in 1969|NASA Apollo 11
+Magna Carta|was sealed by King John at Runnymede in 1215|National Archives Magna Carta
+the Declaration of Independence|was adopted by the Continental Congress on 4 July 1776|National Archives Declaration of Independence
+the Berlin Wall|fell in 1989 after decades as a Cold War symbol|Britannica Berlin Wall
+the Rosetta Stone|helped scholars decode Egyptian hieroglyphs|British Museum Rosetta Stone
+smallpox eradication|was declared by the World Health Organization in 1980|WHO smallpox
+the first modern Olympic Games|were held in Athens in 1896|Olympics history
+the Wright brothers' first flight|took place at Kitty Hawk in 1903|Smithsonian aviation
+the Cuban Missile Crisis|brought the United States and Soviet Union into a 1962 nuclear standoff|Britannica Cuban Missile Crisis
+the Suez Canal opening|created a sea route between the Mediterranean and Red Sea in 1869|Suez Canal Authority
+the Treaty of Versailles|formally ended World War I between Germany and the Allied powers|Britannica Treaty of Versailles
+the Battle of Hastings|was fought in England in 1066|Britannica Battle of Hastings
+the Meiji Restoration|transformed Japan's government in the late 19th century|Britannica Meiji Restoration
+the Renaissance|saw a major revival of classical learning and art in Europe|Britannica Renaissance
+the Black Death|devastated Europe in the 14th century|Britannica Black Death
+the D-Day landings|began the Allied invasion of Normandy in 1944|Imperial War Museums D-Day
+the Boston Tea Party|was a colonial protest involving tea dumped into Boston Harbor|Britannica Boston Tea Party
+the Opium Wars|were 19th-century conflicts involving Britain and China|Britannica Opium Wars
+the American Civil War|was fought between the Union and the Confederacy|National Park Service Civil War
+the Russian Revolution|overthrew the Romanov monarchy in 1917|Britannica Russian Revolution
+the Eureka Stockade|was an 1854 goldfields rebellion in Victoria|National Museum of Australia Eureka Stockade
+Australian federation|created the Commonwealth of Australia in 1901|Parliament of Australia federation
+the Gallipoli campaign|is central to Anzac commemoration in Australia and New Zealand|Australian War Memorial Gallipoli
+decimal currency in Australia|was introduced on 14 February 1966|Royal Australian Mint decimal currency
+the Mabo decision|recognised native title in Australian law|National Museum of Australia Mabo
+the Stolen Generations apology|was delivered by the Australian Prime Minister in 2008|Parliament of Australia apology
+the Snowy Mountains Scheme|became a landmark postwar Australian engineering project|National Museum of Australia Snowy Scheme
 `);
 
-  const landmarks = list(`
-Eiffel Tower|France
-Colosseum|Italy
-Taj Mahal|India
-Machu Picchu|Peru
-Petra|Jordan
-Angkor Wat|Cambodia
-Pyramids of Giza|Egypt
-Stonehenge|England
-Christ the Redeemer|Brazil
-Statue of Liberty|United States
-Mount Rushmore|United States
-Sagrada Familia|Spain
-Acropolis|Greece
-Great Wall|China
-Burj Khalifa|United Arab Emirates
-CN Tower|Canada
-Table Mountain|South Africa
-Neuschwanstein Castle|Germany
-Brandenburg Gate|Germany
-Louvre Museum|France
+  const scienceNature = list(`
+Jupiter|is the largest planet in the Solar System|NASA Jupiter
+Challenger Deep|is the deepest known part of Earth's oceans|NOAA ocean depth
+the Ring of Fire|partly encircles the Pacific Basin with frequent earthquakes and volcanoes|USGS Ring of Fire
+Pangaea|was a supercontinent whose name means all the Earth|Britannica Pangaea
+the periodic table|organises chemical elements by atomic number|Royal Society of Chemistry periodic table
+helium|is the chemical element named from the Greek word for the Sun|Royal Society of Chemistry helium
+DNA|carries genetic information in living organisms|NIH genetics
+photosynthesis|is the process by which plants use light to make sugars|Britannica photosynthesis
+the Amazon rainforest|is the world's largest tropical rainforest|WWF Amazon
+the Sahara|is the world's largest hot desert|Britannica Sahara
+Mount Everest|is Earth's highest mountain above sea level|Britannica Everest
+the Nile|is commonly listed among the world's longest rivers|Britannica Nile
+Lake Baikal|is the world's deepest freshwater lake|UNESCO Lake Baikal
+the Great Barrier Reef|is the world's largest coral reef system|UNESCO Great Barrier Reef
+Uluru|is a sandstone monolith in Australia's Northern Territory|Parks Australia Uluru
+the platypus|is an egg-laying mammal known as a monotreme|Australian Museum platypus
+the echidna|is an Australian egg-laying mammal|Australian Museum monotremes
+the dingo|is a wild canid found in Australia|Australian Museum dingo
+the ozone layer|absorbs much of the Sun's ultraviolet radiation|NASA ozone
+the Mariana Trench|lies in the western Pacific Ocean|NOAA Mariana Trench
+the Great Red Spot|is a long-lived storm on Jupiter|NASA Jupiter
+Halley's Comet|is visible from Earth roughly every 76 years|NASA comet facts
+the asteroid belt|lies mainly between Mars and Jupiter|NASA asteroid belt
+the Southern Cross|is a constellation shown on the Australian flag|Australian National Flag
+the Pacific Ocean|is the world's largest ocean|NOAA ocean facts
+the Dead Sea|is famous for extremely salty water|Britannica Dead Sea
+Victoria Falls|is a waterfall on the Zambezi River|UNESCO Victoria Falls
+the Galapagos Islands|are associated with Charles Darwin's observations|UNESCO Galapagos
+the monsoon|is a seasonal wind pattern bringing wet and dry seasons|Britannica monsoon
+El Nino|is a warming phase of the tropical Pacific climate cycle|NOAA El Nino
 `);
 
-  const rivers = list(`
-London|Thames
-Paris|Seine
-Rome|Tiber
-Cairo|Nile
-Budapest|Danube
-Vienna|Danube
-Prague|Vltava
-New York City|Hudson
-Washington, D.C.|Potomac
-Shanghai|Huangpu
-Bangkok|Chao Phraya
-Florence|Arno
-Porto|Douro
-Cologne|Rhine
-New Orleans|Mississippi
+  const inventionsMedicine = list(`
+penicillin|was discovered by Alexander Fleming in 1928|Britannica penicillin
+the telephone|is associated with Alexander Graham Bell's 1876 patent|Library of Congress telephone
+the printing press|was developed in Europe by Johannes Gutenberg|Britannica Gutenberg
+the World Wide Web|was invented by Tim Berners-Lee at CERN|CERN World Wide Web
+the black box flight recorder|was invented by Australian scientist David Warren|National Museum of Australia black box
+Wi-Fi technology|has important Australian CSIRO patent history|CSIRO Wi-Fi
+the cochlear implant|is strongly linked with Australian scientist Graeme Clark|National Museum of Australia cochlear implant
+the bionic ear|is another name often used for the cochlear implant|National Museum of Australia cochlear implant
+the first successful vaccine|was Edward Jenner's smallpox vaccine|WHO vaccination history
+insulin|was first used successfully as a diabetes treatment in the early 1920s|Nobel Prize insulin
+X-rays|were discovered by Wilhelm Roentgen in 1895|Nobel Prize Roentgen
+radioactivity|was a field pioneered by Marie Curie|Nobel Prize Marie Curie
+the polio vaccine|is closely associated with Jonas Salk|History of Vaccines polio
+the barcode|uses machine-readable lines to identify products|Smithsonian barcode
+GPS|uses satellites for positioning and navigation|NASA GPS
+the steam engine|was improved by James Watt during the Industrial Revolution|Britannica James Watt
+the light bulb|is famously associated with Thomas Edison|Smithsonian Edison
+the aeroplane|was first flown successfully by the Wright brothers|Smithsonian Wright brothers
+the microscope|made tiny organisms and cells visible to scientists|Britannica microscope
+the telescope|was used by Galileo for astronomical observations|Britannica telescope
+the battery|was pioneered by Alessandro Volta|Britannica Volta
+the pasteurisation process|is named after Louis Pasteur|Britannica Pasteur
+the periodic law|is associated with Dmitri Mendeleev|Britannica Mendeleev
+the Turing machine|is a theoretical computing model associated with Alan Turing|Britannica Turing machine
+the first programmable computer|is often linked with Charles Babbage's Analytical Engine|Britannica Analytical Engine
+the transistor|helped make modern electronics smaller and more reliable|Nobel Prize transistor
+the laser|stands for light amplification by stimulated emission of radiation|Britannica laser
+the Hubble Space Telescope|was launched into orbit in 1990|NASA Hubble
+the International Space Station|orbits Earth as a multinational laboratory|NASA ISS
+the James Webb Space Telescope|observes space mainly in infrared light|NASA Webb
 `);
 
-  const countries = list(`
-Sahara Desert|Algeria
-Atacama Desert|Chile
-Gobi Desert|Mongolia
-Amazon rainforest|Brazil
-Galapagos Islands|Ecuador
-Lake Baikal|Russia
-Mount Fuji|Japan
-Mount Kilimanjaro|Tanzania
-Victoria Falls|Zimbabwe
-Serengeti National Park|Tanzania
-Yellowstone National Park|United States
-Banff National Park|Canada
-Santorini|Greece
-Marrakech|Morocco
-Dubrovnik|Croatia
-Transylvania|Romania
-Patagonia|Argentina
+  const documentsCulture = list(`
+The Odyssey|is an ancient Greek epic traditionally attributed to Homer|Britannica Odyssey
+Pride and Prejudice|was written by Jane Austen|Britannica Jane Austen
+Frankenstein|was written by Mary Shelley|British Library Frankenstein
+Nineteen Eighty-Four|was written by George Orwell|British Library George Orwell
+Don Quixote|was written by Miguel de Cervantes|Britannica Don Quixote
+The Great Gatsby|was written by F. Scott Fitzgerald|Britannica Great Gatsby
+Hamlet|features Shakespeare's Prince of Denmark|Britannica Hamlet
+Mona Lisa|is a portrait painted by Leonardo da Vinci|Louvre Mona Lisa
+The Starry Night|is a painting by Vincent van Gogh|MoMA Starry Night
+the Sistine Chapel ceiling|was painted by Michelangelo|Vatican Museums Sistine Chapel
+the Nobel Peace Prize|is awarded in Oslo|Nobel Prize facts
+the Pulitzer Prize|is associated with journalism, literature and music in the United States|Pulitzer Prize
+the Booker Prize|is a major literary prize for fiction|Booker Prize
+the Academy Awards|are also known as the Oscars|Academy Awards
+the Eurovision Song Contest|is a long-running international song competition|Eurovision history
+the haka|is a ceremonial Maori performance known worldwide through New Zealand sport|Te Ara haka
+the didgeridoo|is a wind instrument associated with Aboriginal Australian cultures|Australian Museum didgeridoo
+boomerang|is a throwing tool strongly associated with Aboriginal Australia|National Museum of Australia boomerang
+NAIDOC Week|celebrates Aboriginal and Torres Strait Islander histories and cultures|NAIDOC official
+Anzac Day|is observed on 25 April in Australia and New Zealand|Australian War Memorial Anzac Day
+the Archibald Prize|is a famous Australian portrait prize|Art Gallery of NSW Archibald
+the Miles Franklin Award|is a major Australian literary award|State Library NSW Miles Franklin
+the Booker winner Life of Pi|was written by Yann Martel|Booker Prize Life of Pi
+the Rosetta Stone|contains Greek, demotic and hieroglyphic text|British Museum Rosetta Stone
+the Bayeux Tapestry|depicts events around the Norman Conquest of England|Bayeux Museum
 `);
 
-  const currencies = list(`
-Japan|yen
-United Kingdom|pound sterling
-United States|dollar
-New Zealand|dollar
-Canada|dollar
-India|rupee
-Indonesia|rupiah
-Thailand|baht
-China|yuan
-South Korea|won
-Mexico|peso
-Brazil|real
-South Africa|rand
-Switzerland|franc
-Sweden|krona
-Norway|krone
-Denmark|krone
-Turkey|lira
-Poland|zloty
+  const worldGeography = list(`
+Machu Picchu|is an Inca site high in the Andes of Peru|UNESCO Machu Picchu
+Petra|is a rock-cut archaeological city in Jordan|UNESCO Petra
+Angkor Wat|is a temple complex in Cambodia|UNESCO Angkor
+the Eiffel Tower|was built in Paris for the 1889 Exposition Universelle|Britannica Eiffel Tower
+the Prime Meridian|passes through Greenwich in London|Royal Museums Greenwich
+the Suez Canal|links the Mediterranean Sea and the Red Sea|Suez Canal Authority
+the Panama Canal|links the Atlantic and Pacific oceans through Panama|Panama Canal Authority
+Mount Kilimanjaro|is Africa's highest mountain|Britannica Kilimanjaro
+the Atacama Desert|lies mainly in northern Chile|Britannica Atacama
+the Gobi Desert|spans parts of Mongolia and China|Britannica Gobi
+Patagonia|is a region shared by Argentina and Chile|Britannica Patagonia
+Santorini|is a Greek island in the Aegean Sea|Britannica Santorini
+Dubrovnik|is a walled city on Croatia's Adriatic coast|UNESCO Dubrovnik
+Istanbul|sits on the Bosporus between Europe and Asia|Britannica Istanbul
+the Serengeti|is famous for wildlife migration in East Africa|UNESCO Serengeti
+Yellowstone|was established as the first U.S. national park|National Park Service Yellowstone
+Banff|is a national park in the Canadian Rockies|Parks Canada Banff
+Table Mountain|overlooks Cape Town in South Africa|South African National Parks
+the Amazon River|flows across northern South America|Britannica Amazon River
+the Mekong River|flows through mainland Southeast Asia|Mekong River Commission
+the Danube|flows through or along several European countries|Britannica Danube
+the Rhine|is a major river of western Europe|Britannica Rhine
+the Himalayas|include many of the world's highest mountains|Britannica Himalayas
+the Maldives|is an island nation in the Indian Ocean|Britannica Maldives
+Madagascar|is a large island off Africa's southeast coast|Britannica Madagascar
+Iceland|sits on the Mid-Atlantic Ridge|Britannica Iceland
+New Zealand|is made up mainly of the North Island and South Island|Britannica New Zealand
+Tasmania|is Australia's island state|Britannica Tasmania
+Kakadu National Park|is in Australia's Northern Territory|UNESCO Kakadu
+Rottnest Island|is known for quokkas off Western Australia|Rottnest Island Authority
 `);
 
-  const stateCapitals = list(`
-Alabama|Montgomery
-Alaska|Juneau
-Arizona|Phoenix
-Arkansas|Little Rock
-California|Sacramento
-Colorado|Denver
-Connecticut|Hartford
-Florida|Tallahassee
-Georgia|Atlanta
-Hawaii|Honolulu
-Illinois|Springfield
-Massachusetts|Boston
-Michigan|Lansing
-Minnesota|Saint Paul
-Nevada|Carson City
-New York|Albany
-Ohio|Columbus
-Oregon|Salem
-Texas|Austin
-Washington|Olympia
+  const everydayTrivia = list(`
+the cheetah|is commonly described as the fastest land animal|National Geographic cheetah
+the blue whale|is the largest animal known to have lived on Earth|NOAA blue whale
+honey|is made by bees from nectar|Smithsonian bees
+saffron|is a spice harvested from crocus flowers|Britannica saffron
+sushi|is strongly associated with Japanese cuisine|Britannica sushi
+pizza|has roots in Italian food culture|Britannica pizza
+espresso|is a concentrated coffee style from Italy|Britannica coffee
+champagne|is sparkling wine from a region of France|Britannica Champagne
+the Celsius scale|sets water's freezing point at 0 degrees under standard conditions|Britannica Celsius
+the Richter scale|was developed to measure earthquake magnitude|Britannica Richter scale
+Morse code|uses dots and dashes for communication|Britannica Morse Code
+Braille|is a tactile writing system for blind and low-vision readers|Britannica Braille
+the ampersand|is the symbol for the word and|Britannica ampersand
+the ampere|is a unit of electric current|Britannica ampere
+the kilogram|is the SI base unit of mass|BIPM SI units
+the leap year|adds an extra day to keep calendars aligned with Earth's orbit|Britannica leap year
+the solstice|marks one of the year's extreme points of daylight|Britannica solstice
+the equinox|is when day and night are roughly equal in length|Britannica equinox
+the metric system|is a decimal system of measurement|Britannica metric system
+the Olympic rings|represent the Olympic movement with five interlaced rings|Olympics symbols
+Australia's emergency number|is triple zero|Australian Government triple zero
+the Royal Flying Doctor Service|provides medical care to remote Australia|Royal Flying Doctor Service
+the Ghan|is a rail journey between Adelaide and Darwin|Journey Beyond Ghan
+the Indian Pacific|is a rail journey across Australia between Sydney and Perth|Journey Beyond Indian Pacific
+the Nullarbor|is named from Latin words meaning no trees|Britannica Nullarbor
+Coober Pedy|is known for opal mining and underground homes|South Australian Tourism Coober Pedy
 `);
 
   return [
-    ...rowsFrom(capitals, ([country]) => `What is the capital of ${country}?`, ([, capital]) => capital, ([, capital]) => capital),
-    ...rowsFrom(capitals, ([country]) => `Which city serves as the capital of ${country}?`, ([, capital]) => capital, ([, capital]) => capital),
-    ...rowsFrom(capitals, ([country]) => `Name the capital city of ${country}.`, ([, capital]) => capital, ([, capital]) => capital),
-    ...rowsFrom(capitals, ([country, capital]) => `${capital} is the capital of which country?`, ([country]) => country, ([country]) => country),
-    ...rowsFrom(capitals, ([country, capital]) => `Which country has ${capital} as its capital?`, ([country]) => country, ([country]) => country),
-    ...rowsFrom(landmarks, ([landmark]) => `Which country is home to ${landmark}?`, ([, country]) => country, ([, country]) => country),
-    ...rowsFrom(landmarks, ([landmark]) => `${landmark} is found in which country?`, ([, country]) => country, ([, country]) => country),
-    ...rowsFrom(landmarks, ([landmark, country]) => `Which landmark is in ${country}?`, ([landmark]) => landmark, ([landmark]) => landmark),
-    ...rowsFrom(landmarks, ([landmark, country]) => `${country} is home to which landmark?`, ([landmark]) => landmark, ([landmark]) => landmark),
-    ...rowsFrom(rivers, ([city]) => `Which river flows through ${city}?`, ([, river]) => river, ([, river]) => river),
-    ...rowsFrom(rivers, ([city, river]) => `${river} flows through which city?`, ([city]) => city, ([city]) => city),
-    ...rowsFrom(rivers, ([city]) => `Name the river most associated with ${city}.`, ([, river]) => river, ([, river]) => river),
-    ...rowsFrom(countries, ([place]) => `Which country is associated with ${place}?`, ([, country]) => country, ([, country]) => country),
-    ...rowsFrom(countries, ([place]) => `${place} is in, or strongly associated with, which country?`, ([, country]) => country, ([, country]) => country),
-    ...rowsFrom(countries, ([place, country]) => `Which place is associated with ${country}?`, ([place]) => place, ([place]) => place),
-    ...rowsFrom(currencies, ([country]) => `What currency is used in ${country}?`, ([, currency]) => currency, ([, currency]) => currency),
-    ...rowsFrom(currencies, ([country]) => `Which currency would you use in ${country}?`, ([, currency]) => currency, ([, currency]) => currency),
-    ...rowsFrom(currencies, ([country, currency]) => `The ${currency} is used in which country?`, ([country]) => country, ([country]) => country),
-    ...rowsFrom(stateCapitals, ([state]) => `What is the capital of the U.S. state of ${state}?`, ([, capital]) => capital, ([, capital]) => capital)
+    ...generalFactRows(historyEvents, "history"),
+    ...generalFactRows(scienceNature, "science"),
+    ...generalFactRows(inventionsMedicine, "inventions"),
+    ...generalFactRows(documentsCulture, "culture"),
+    ...generalFactRows(worldGeography, "geography"),
+    ...generalFactRows(everydayTrivia, "everyday")
   ];
 }
 
-function rowsFrom(facts, questionFn, answerFn, poolFn) {
+function generalFactRows(facts, theme) {
+  const templates = [
+    ([, clue]) => `What ${clue}?`,
+    ([, clue]) => `Which answer matches this ${theme} fact: ${clue}?`,
+    ([, clue]) => `Which answer is most closely linked with this fact: ${clue}?`,
+    ([, clue]) => `What would a quizmaster expect for this fact: ${clue}?`,
+    ([, clue]) => `Which option is associated with this fact: ${clue}?`,
+    ([, clue]) => `What is the usual trivia answer for this fact: ${clue}?`,
+    ([, clue]) => `Which answer belongs with this fact: ${clue}?`,
+    ([, clue]) => `What is being described here: ${clue}?`,
+    ([, clue]) => `Which answer best fits the fact that it ${clue}?`,
+    ([, clue]) => `Which option should be matched with this fact: ${clue}?`,
+    ([, clue]) => `What is the general-knowledge answer for this fact: ${clue}?`,
+    ([, clue]) => `Which answer is tied to this fact: ${clue}?`,
+    ([, clue]) => `What is the answer associated with this fact: ${clue}?`,
+    ([, clue]) => `Which answer has this claim attached to it: ${clue}?`,
+    ([, clue]) => `What is the correct answer for this fact: ${clue}?`,
+    ([, clue]) => `Which answer is known for this fact: ${clue}?`,
+    ([, clue]) => `Which answer is a strong match for this fact: ${clue}?`,
+    ([, clue]) => `Which answer completes this general fact: ${clue}?`,
+    ([, clue]) => `What answer is linked with the fact that it ${clue}?`,
+    ([, clue]) => `Which answer is described by this fact: ${clue}?`,
+    ([, clue]) => `What is the matching answer for this fact: ${clue}?`,
+    ([, clue]) => `Which answer would you pair with this fact: ${clue}?`,
+    ([, clue]) => `What answer goes with this fact: ${clue}?`,
+    ([, clue]) => `Which answer is the best match for this fact: ${clue}?`,
+    ([, clue]) => `What does this fact point to: ${clue}?`,
+    ([, clue]) => `Which answer is identified by this fact: ${clue}?`,
+    ([, clue]) => `What is named by this fact: ${clue}?`,
+    ([, clue]) => `Which answer is the subject of this fact: ${clue}?`,
+    ([, clue]) => `Which answer is usually linked with this fact: ${clue}?`
+  ];
+
+  return templates.flatMap((questionFn) =>
+    rowsFrom(
+      facts,
+      questionFn,
+      ([answer]) => answer,
+      ([answer]) => answer,
+      null,
+      ([answer, clue, source]) => ({
+        source,
+        factKey: `general|${theme}|${normalizeText(answer)}|${normalizeText(clue)}`
+      })
+    )
+  );
+}
+
+function rowsFrom(facts, questionFn, answerFn, poolFn, forbiddenFn = null, metaFn = null) {
   const pool = unique(facts.map(poolFn));
   return facts.map((fact, index) => {
     const answer = answerFn(fact);
-    return [questionFn(fact), answer, pickDistractors(answer, pool, index)];
+    const forbidden = forbiddenFn ? forbiddenFn(fact).filter((item) => item !== answer) : [];
+    return [questionFn(fact), answer, pickDistractors(answer, pool, index, forbidden), metaFn ? metaFn(fact) : undefined];
   });
+}
+
+function sourcedRowsFrom(facts, questionFn, answerFn, poolFn, sourceFn, forbiddenFn = null) {
+  return rowsFrom(facts, questionFn, answerFn, poolFn, forbiddenFn, (fact) => ({ source: sourceFn(fact) }));
+}
+
+function sameGroupValues(facts, keyFn, valueFn) {
+  const groups = groupRows(facts, keyFn);
+  return (fact) => unique((groups.get(keyFn(fact)) || []).map(valueFn));
 }
 
 function pickDistractors(answer, pool, index, forbidden = []) {

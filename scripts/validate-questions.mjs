@@ -13,6 +13,145 @@ const errors = [];
 const ids = new Set();
 const questionTexts = new Set();
 const missingSemanticKeys = [];
+const KNOWN_FEMALE_SPORT_NAMES = new Set([
+  "Diana Taurasi",
+  "Lisa Leslie",
+  "Sue Bird",
+  "Lauren Jackson",
+  "Serena Williams",
+  "Margaret Court",
+  "Steffi Graf",
+  "Martina Navratilova",
+  "Billie Jean King",
+  "Iga Swiatek",
+  "Florence Griffith-Joyner",
+  "Shelly-Ann Fraser-Pryce",
+  "Allyson Felix",
+  "Jackie Joyner-Kersee",
+  "Fanny Blankers-Koen",
+  "Katie Ledecky",
+  "Simone Biles",
+  "Nadia Comaneci",
+  "Marta",
+  "Mia Hamm",
+  "Megan Rapinoe",
+  "Alex Morgan",
+  "Christine Sinclair",
+  "Annika Sorenstam",
+  "Erin Phillips",
+  "Liz Ellis",
+  "Caitlin Bassett",
+  "Irene van Dyk",
+  "Sharelle McMahon",
+  "Laura Geitz",
+  "Gretel Bueta",
+  "Cathy Freeman",
+  "Emma McKeon",
+  "Dawn Fraser",
+  "Betty Cuthbert",
+  "Ariarne Titmus",
+  "Jessica Fox",
+  "Anna Meares",
+  "Sally Pearson"
+]);
+const KNOWN_MALE_SPORT_NAMES = new Set([
+  "LeBron James",
+  "Kareem Abdul-Jabbar",
+  "Michael Jordan",
+  "Stephen Curry",
+  "Kobe Bryant",
+  "Wilt Chamberlain",
+  "Bill Russell",
+  "Magic Johnson",
+  "Larry Bird",
+  "Shaquille O'Neal",
+  "Tim Duncan",
+  "Dirk Nowitzki",
+  "Hakeem Olajuwon",
+  "Giannis Antetokounmpo",
+  "Nikola Jokic",
+  "Russell Westbrook",
+  "Oscar Robertson",
+  "Roger Federer",
+  "Rafael Nadal",
+  "Novak Djokovic",
+  "Usain Bolt",
+  "Eliud Kipchoge",
+  "Michael Phelps",
+  "Mark Spitz",
+  "Tom Brady",
+  "Jerry Rice",
+  "Peyton Manning",
+  "Patrick Mahomes",
+  "Barry Bonds",
+  "Hank Aaron",
+  "Cal Ripken Jr.",
+  "Shohei Ohtani",
+  "Babe Ruth",
+  "Wayne Gretzky",
+  "Alexander Ovechkin",
+  "Miroslav Klose",
+  "Pele",
+  "Lionel Messi",
+  "Cristiano Ronaldo",
+  "Sachin Tendulkar",
+  "Brian Lara",
+  "Muttiah Muralitharan",
+  "Shane Warne",
+  "Don Bradman",
+  "Lewis Hamilton",
+  "Michael Schumacher",
+  "Max Verstappen",
+  "Ayrton Senna",
+  "Sebastian Vettel",
+  "Fernando Alonso",
+  "Alain Prost",
+  "Niki Lauda",
+  "Valentino Rossi",
+  "Tiger Woods",
+  "Jack Nicklaus",
+  "Rory McIlroy",
+  "Kelly Slater",
+  "Lance Franklin",
+  "Gary Ablett Jr.",
+  "Brent Harvey",
+  "Tony Lockett",
+  "Dustin Martin",
+  "Patrick Dangerfield",
+  "Michael Tuck",
+  "Joel Selwood",
+  "Nat Fyfe",
+  "Adam Goodes",
+  "Robert Harvey",
+  "Simon Black",
+  "Jason Dunstall",
+  "Cameron Smith",
+  "Johnathan Thurston",
+  "Billy Slater",
+  "Cooper Cronk",
+  "Andrew Johns",
+  "Darren Lockyer",
+  "Nathan Cleary",
+  "James Tedesco",
+  "Ben Barba",
+  "Roger Tuivasa-Sheck",
+  "Kalyn Ponga",
+  "Brad Fittler",
+  "Richie McCaw",
+  "Jonah Lomu",
+  "Andrew Gaze",
+  "Bryce Cotton",
+  "Leroy Loggins",
+  "Chris Anstey",
+  "Chris Lynn",
+  "Aaron Finch",
+  "Rashid Khan",
+  "Dan Christian",
+  "Ian Thorpe",
+  "Kieren Perkins",
+  "Steven Bradbury",
+  "Mack Horton"
+]);
 const counts = Object.fromEntries(EXPECTED_CATEGORIES.map((category) => [category, 0]));
 const difficultyIds = new Set(DIFFICULTY_LEVELS.map((difficulty) => difficulty.id));
 const difficultyCounts = Object.fromEntries(
@@ -62,6 +201,12 @@ QUESTION_BANK.forEach((question, index) => {
     for (const option of question.options) {
       if (option !== question.answer && optionConflicts(option, question.answer)) {
         errors.push(`${label} has a wrong option that contains or is contained by the answer: ${option}`);
+      }
+      if (option !== question.answer && containsWholePhrase(question.question, option)) {
+        errors.push(`${label} has a wrong option already named in the question text: ${option}`);
+      }
+      if (option !== question.answer && hasOppositeGenderOption(question, option)) {
+        errors.push(`${label} has an opposite-gender sport option: ${option}`);
       }
     }
   }
@@ -119,6 +264,22 @@ function containsText(value, term) {
 
 function optionConflicts(option, answer) {
   return containsText(option, answer) || containsText(answer, option);
+}
+
+function hasOppositeGenderOption(question, option) {
+  if (question.sportGender === "female") {
+    return KNOWN_MALE_SPORT_NAMES.has(option) || /\b(men|mens|male|nba|nfl|mlb|nhl|nrl)\b/.test(normalizeText(option));
+  }
+  if (question.sportGender === "male") {
+    return KNOWN_FEMALE_SPORT_NAMES.has(option) || /\b(women|woman|female|wnba|aflw|netball)\b/.test(normalizeText(option));
+  }
+  return false;
+}
+
+function containsWholePhrase(value, term) {
+  const needle = normalizeText(term);
+  if (needle.length < 3) return false;
+  return ` ${normalizeText(value)} `.includes(` ${needle} `);
 }
 
 function normalizeText(value) {
