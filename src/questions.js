@@ -313,8 +313,8 @@ const QUESTION_SETS = {
 
 const EXPANDED_QUESTION_SETS = expandQuestionSets(QUESTION_SETS);
 
-const EASY_QUESTIONS_PER_CATEGORY = 300;
-const HARD_QUESTIONS_PER_CATEGORY = 1100;
+const EASY_QUESTIONS_PER_CATEGORY = 500;
+const HARD_QUESTIONS_PER_CATEGORY = 2250;
 
 export const QUESTION_BANK = Object.entries(EXPANDED_QUESTION_SETS).flatMap(([category, rows]) => {
   const questions = rows.map(([question, answer, distractors, meta = {}], index) => {
@@ -331,7 +331,7 @@ export const QUESTION_BANK = Object.entries(EXPANDED_QUESTION_SETS).flatMap(([ca
     };
   });
 
-  return assignDifficulties(questions).map(({ hardnessScore, ...question }) => question);
+  return assignDifficulties(questions, category).map(({ hardnessScore, ...question }) => question);
 });
 
 function rotateOptions(options, index) {
@@ -339,14 +339,16 @@ function rotateOptions(options, index) {
   return [...options.slice(offset), ...options.slice(0, offset)];
 }
 
-function assignDifficulties(questions) {
+function assignDifficulties(questions, category) {
   const ranked = [...questions].sort((a, b) => {
     if (a.hardnessScore !== b.hardnessScore) return a.hardnessScore - b.hardnessScore;
     return a.id.localeCompare(b.id);
   });
 
-  const easyIds = new Set(ranked.slice(0, EASY_QUESTIONS_PER_CATEGORY).map((question) => question.id));
-  const hardIds = new Set(ranked.slice(-HARD_QUESTIONS_PER_CATEGORY).map((question) => question.id));
+  const easyPool = category === "sport" ? ranked.filter((question) => question.sportScopedOptions !== true) : ranked;
+  const hardPool = category === "sport" ? ranked.filter((question) => question.sportScopedOptions === true) : ranked;
+  const easyIds = new Set(easyPool.slice(0, EASY_QUESTIONS_PER_CATEGORY).map((question) => question.id));
+  const hardIds = new Set(hardPool.slice(-HARD_QUESTIONS_PER_CATEGORY).map((question) => question.id));
 
   return questions.map((question) => ({
     ...question,

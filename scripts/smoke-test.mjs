@@ -16,6 +16,8 @@ for (const mode of QUIZ_MODES) {
     assert.deepEqual(categoryCounts(quiz), mode.composition, `${mode.id}/${difficulty.id} composition should match`);
     assert.equal(new Set(quiz.map((question) => question.difficulty)).size, 1, `${mode.id}/${difficulty.id} should use one difficulty`);
     assert.equal(quiz[0].difficulty, difficulty.id, `${mode.id}/${difficulty.id} should use requested difficulty`);
+    assertNoRepeatedSubjects(quiz, `${mode.id}/${difficulty.id}`);
+    if (mode.id === "sport") assertSportContextCaps(quiz, `${mode.id}/${difficulty.id}`);
 
     const correctAnswers = Object.fromEntries(quiz.map((question) => [question.id, question.answer]));
     assert.equal(scoreQuiz(quiz, correctAnswers), 20, `${mode.id}/${difficulty.id} should score perfect answers correctly`);
@@ -41,4 +43,21 @@ function seededRandom(seed) {
     state = (state * 1664525 + 1013904223) % 4294967296;
     return state / 4294967296;
   };
+}
+
+function assertNoRepeatedSubjects(quiz, label) {
+  const subjects = quiz.map((question) => question.subject).filter(Boolean);
+  assert.equal(new Set(subjects).size, subjects.length, `${label} should not repeat the same subject`);
+}
+
+function assertSportContextCaps(quiz, label) {
+  const counts = quiz.reduce((acc, question) => {
+    const context = question.sportContext || "other";
+    acc[context] = (acc[context] || 0) + 1;
+    return acc;
+  }, {});
+
+  assert.ok((counts.netball || 0) <= 1, `${label} should not include more than one netball question`);
+  assert.ok((counts["NBL basketball"] || 0) <= 2, `${label} should not include more than two NBL questions`);
+  assert.ok((counts["Big Bash cricket"] || 0) <= 2, `${label} should not include more than two Big Bash questions`);
 }

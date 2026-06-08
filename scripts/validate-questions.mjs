@@ -2,11 +2,11 @@ import { QUESTION_BANK } from "../src/questions.js";
 import { DIFFICULTY_LEVELS, QUIZ_MODES } from "../src/quiz.js";
 
 const EXPECTED_CATEGORIES = ["sport", "music", "culture", "general"];
-const EXPECTED_PER_CATEGORY = 2500;
+const EXPECTED_PER_CATEGORY = 5000;
 const EXPECTED_DIFFICULTY_COUNTS = {
-  easy: 300,
-  normal: 1100,
-  hard: 1100
+  easy: 500,
+  normal: 2250,
+  hard: 2250
 };
 
 const errors = [];
@@ -47,12 +47,21 @@ QUESTION_BANK.forEach((question, index) => {
     errors.push(`${label} is missing question text.`);
   }
 
+  if (containsText(question.question, question.answer)) {
+    errors.push(`${label} includes the answer in the question text.`);
+  }
+
   if (!Array.isArray(question.options) || question.options.length !== 4) {
     errors.push(`${label} must have exactly 4 options.`);
   } else {
     const optionSet = new Set(question.options);
     if (optionSet.size !== 4) errors.push(`${label} has duplicate options.`);
     if (!optionSet.has(question.answer)) errors.push(`${label} answer is not present in options.`);
+    for (const option of question.options) {
+      if (option !== question.answer && optionConflicts(option, question.answer)) {
+        errors.push(`${label} has a wrong option that contains or is contained by the answer: ${option}`);
+      }
+    }
   }
 
   if (question.category === "sport" && question.difficulty === "hard" && question.sportScopedOptions !== true) {
@@ -95,3 +104,17 @@ if (errors.length > 0) {
 console.log("Question bank valid.");
 console.log(JSON.stringify(counts, null, 2));
 console.log(JSON.stringify(difficultyCounts, null, 2));
+
+function containsText(value, term) {
+  const needle = normalizeText(term);
+  if (needle.length < 2) return false;
+  return normalizeText(value).includes(needle);
+}
+
+function optionConflicts(option, answer) {
+  return containsText(option, answer) || containsText(answer, option);
+}
+
+function normalizeText(value) {
+  return String(value).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}

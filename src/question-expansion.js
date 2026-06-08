@@ -1,4 +1,4 @@
-export const TARGET_QUESTIONS_PER_CATEGORY = 2500;
+export const TARGET_QUESTIONS_PER_CATEGORY = 5000;
 
 export function expandQuestionSets(baseSets) {
   const supplements = {
@@ -10,11 +10,12 @@ export function expandQuestionSets(baseSets) {
 
   return Object.fromEntries(
     Object.entries(baseSets).map(([category, rows]) => {
-      const needed = TARGET_QUESTIONS_PER_CATEGORY - rows.length;
+      const baseRows = rows.filter(isSafeQuestionRow);
+      const needed = TARGET_QUESTIONS_PER_CATEGORY - baseRows.length;
       if (needed < 0) {
         throw new Error(`${category} already has more than ${TARGET_QUESTIONS_PER_CATEGORY} questions.`);
       }
-      const expanded = [...rows, ...fillSupplementRows(rows, supplements[category], needed, category)];
+      const expanded = [...baseRows, ...fillSupplementRows(baseRows, supplements[category], needed, category)];
       if (expanded.length !== TARGET_QUESTIONS_PER_CATEGORY) {
         throw new Error(`${category} has ${expanded.length} questions after expansion.`);
       }
@@ -28,7 +29,7 @@ function fillSupplementRows(baseRows, supplementRows, needed, category) {
   const seen = new Set(baseRows.map(([question]) => question));
   const uniqueSupplements = [];
   for (const row of supplementRows) {
-    if (!seen.has(row[0])) {
+    if (!seen.has(row[0]) && isSafeQuestionRow(row)) {
       selected.push(row);
       uniqueSupplements.push(row);
       seen.add(row[0]);
@@ -59,7 +60,8 @@ function fillSupplementRows(baseRows, supplementRows, needed, category) {
     const source = uniqueSupplements[variantIndex % uniqueSupplements.length];
     const makeQuestion = variants[Math.floor(variantIndex / uniqueSupplements.length) % variants.length];
     const variantQuestion = makeQuestion(source[0]);
-    if (!seen.has(variantQuestion)) {
+    const variantRow = [variantQuestion, source[1], source[2], source[3]];
+    if (!seen.has(variantQuestion) && isSafeQuestionRow(variantRow)) {
       selected.push([variantQuestion, source[1], source[2], source[3]]);
       seen.add(variantQuestion);
     }
@@ -70,6 +72,10 @@ function fillSupplementRows(baseRows, supplementRows, needed, category) {
   }
 
   return selected;
+}
+
+function isSafeQuestionRow([question, answer, distractors]) {
+  return !containsText(question, answer) && !distractors.some((option) => optionConflicts(option, answer));
 }
 
 function rephraseQuestion(question, leadIn) {
@@ -298,6 +304,20 @@ Stephen Curry|became the NBA's all-time leader in made three-pointers|basketball
 Kobe Bryant|scored 81 points in a single NBA game in 2006|basketball
 Wilt Chamberlain|scored 100 points in a single NBA game|basketball
 Bill Russell|won 11 NBA championships as a player|basketball
+Magic Johnson|won five NBA championships with the Los Angeles Lakers|basketball
+Larry Bird|won three straight NBA MVP awards in the 1980s|basketball
+Shaquille O'Neal|won three straight NBA Finals MVP awards from 2000 to 2002|basketball
+Tim Duncan|won five NBA championships with the San Antonio Spurs|basketball
+Dirk Nowitzki|was named 2011 NBA Finals MVP with the Dallas Mavericks|basketball
+Hakeem Olajuwon|won NBA MVP, Defensive Player of the Year and Finals MVP in 1994|basketball
+Giannis Antetokounmpo|scored 50 points in the 2021 NBA Finals clincher|basketball
+Nikola Jokic|became the first Denver Nuggets player to win NBA Finals MVP|basketball
+Russell Westbrook|averaged a triple-double across an NBA season|basketball
+Oscar Robertson|was the first NBA player to average a triple-double for a season|basketball
+Diana Taurasi|became the WNBA's all-time leading scorer|basketball
+Lisa Leslie|recorded the first dunk in WNBA history|basketball
+Sue Bird|won four WNBA championships with the Seattle Storm|basketball
+Lauren Jackson|won multiple WNBA MVP awards with the Seattle Storm|basketball
 Serena Williams|won 23 Grand Slam singles titles|tennis
 Margaret Court|won 24 Grand Slam singles titles|tennis
 Roger Federer|won eight Wimbledon men's singles titles|tennis
@@ -354,6 +374,12 @@ Dustin Martin|won three Norm Smith Medals|Australian rules football
 Patrick Dangerfield|won the 2016 Brownlow Medal|Australian rules football
 Michael Tuck|played in seven VFL/AFL premiership teams|Australian rules football
 Joel Selwood|captained Geelong to the 2022 AFL premiership|Australian rules football
+Nat Fyfe|won Brownlow Medals in 2015 and 2019|Australian rules football
+Adam Goodes|won Brownlow Medals in 2003 and 2006|Australian rules football
+Robert Harvey|won back-to-back Brownlow Medals in 1997 and 1998|Australian rules football
+Simon Black|won the Brownlow Medal, Norm Smith Medal and a premiership medal|Australian rules football
+Erin Phillips|won the first AFLW best and fairest award|Australian rules football
+Jason Dunstall|kicked more than 1,200 VFL/AFL goals|Australian rules football
 Cameron Smith|became the first NRL player to reach 400 first-grade games|rugby league
 Johnathan Thurston|won four Dally M Medals|rugby league
 Cameron Smith|retired with 430 NRL appearances|rugby league
@@ -362,6 +388,12 @@ Billy Slater|won the 2011 Dally M Medal|rugby league
 Cooper Cronk|won Dally M Medals in 2013 and 2016|rugby league
 Andrew Johns|won three Dally M Medals|rugby league
 Darren Lockyer|retired with 355 NRL premiership appearances|rugby league
+Nathan Cleary|won the Clive Churchill Medal in the 2021 NRL Grand Final|rugby league
+James Tedesco|won the 2019 Dally M Medal|rugby league
+Ben Barba|won the 2012 Dally M Medal|rugby league
+Roger Tuivasa-Sheck|won the 2018 Dally M Medal|rugby league
+Kalyn Ponga|won the 2023 Dally M Medal|rugby league
+Brad Fittler|captained New South Wales in State of Origin and Australia in Tests|rugby league
 Richie McCaw|captained New Zealand to Rugby World Cup wins in 2011 and 2015|rugby union
 Jonah Lomu|became a breakout star at the 1995 Rugby World Cup|rugby union
 Andrew Gaze|won a record seven NBL MVP awards|NBL basketball
@@ -382,17 +414,37 @@ Perth Scorchers|became the first Big Bash League club to win five titles|Big Bas
 Sydney Sixers|won back-to-back BBL titles in BBL 09 and BBL 10|Big Bash cricket
 Rashid Khan|took a Big Bash League hat-trick for the Adelaide Strikers|Big Bash cricket
 Dan Christian|became known for winning T20 titles across multiple leagues|Big Bash cricket
+Cathy Freeman|won the women's 400 metres at the Sydney 2000 Olympics|Australian Olympic history
+Ian Thorpe|won three gold medals at the Sydney 2000 Olympics|Australian Olympic history
+Emma McKeon|won seven medals at the Tokyo 2020 Olympics|Australian Olympic history
+Dawn Fraser|won the women's 100 metres freestyle at three consecutive Olympics|Australian Olympic history
+Betty Cuthbert|won four Olympic gold medals across sprint events|Australian Olympic history
+Ariarne Titmus|beat Katie Ledecky in the 400 metres freestyle at Tokyo 2020|Australian Olympic history
+Jessica Fox|won Olympic gold in canoe slalom at Tokyo 2020|Australian Olympic history
+Anna Meares|won Olympic cycling gold in 2004 and 2012|Australian Olympic history
+Kieren Perkins|won back-to-back Olympic 1500 metres freestyle gold medals|Australian Olympic history
+Steven Bradbury|won Australia's first Winter Olympic gold medal|Australian Olympic history
+Mack Horton|won Olympic 400 metres freestyle gold at Rio 2016|Australian Olympic history
+Sally Pearson|won Olympic 100 metres hurdles gold at London 2012|Australian Olympic history
 `);
 
   return [
     ...milestoneRows(milestones),
     ...rowsFrom(teamVenues, ([team]) => `Which venue is strongly associated with ${team}?`, ([, venue]) => venue, ([, venue]) => venue),
+    ...rowsFrom(teamVenues, ([team]) => `What is the home venue most associated with ${team}?`, ([, venue]) => venue, ([, venue]) => venue),
+    ...rowsFrom(teamVenues, ([team]) => `Where would ${team} most famously play home matches?`, ([, venue]) => venue, ([, venue]) => venue),
     ...rowsFrom(teamVenues, ([team, venue]) => `${venue} is strongly associated with which team?`, ([team]) => team, ([team]) => team),
     ...rowsFrom(athletes, ([athlete]) => `Which sport is ${athlete} best known for?`, ([, sport]) => sport, ([, sport]) => sport),
+    ...rowsFrom(athletes, ([athlete]) => `${athlete} made their name in which sport?`, ([, sport]) => sport, ([, sport]) => sport),
+    ...rowsFrom(athletes, ([athlete]) => `What sport would you connect with ${athlete}?`, ([, sport]) => sport, ([, sport]) => sport),
     ...rowsFrom(eventWinners, ([event]) => `Who won the ${event}?`, ([, winner]) => winner, ([, winner]) => winner),
+    ...rowsFrom(eventWinners, ([event]) => `Which team or country claimed the ${event}?`, ([, winner]) => winner, ([, winner]) => winner),
     ...rowsFrom(terms, ([term]) => `In which sport would you hear the term '${term}'?`, ([, sport]) => sport, ([, sport]) => sport),
+    ...rowsFrom(terms, ([term]) => `The term '${term}' belongs most naturally to which sport?`, ([, sport]) => sport, ([, sport]) => sport),
     ...rowsFrom(hosts, ([event]) => `Which city hosted the ${event}?`, ([, city]) => city, ([, city]) => city),
-    ...rowsFrom(trophies, ([trophy]) => `The ${trophy} is associated with which sport?`, ([, sport]) => sport, ([, sport]) => sport)
+    ...rowsFrom(hosts, ([event]) => `Where was the ${event} held?`, ([, city]) => city, ([, city]) => city),
+    ...rowsFrom(trophies, ([trophy]) => `The ${trophy} is associated with which sport?`, ([, sport]) => sport, ([, sport]) => sport),
+    ...rowsFrom(trophies, ([trophy]) => `Which sport awards or contests the ${trophy}?`, ([, sport]) => sport, ([, sport]) => sport)
   ];
 }
 
@@ -428,22 +480,22 @@ function milestoneRows(facts) {
   ];
 
   return facts.flatMap((fact, index) => {
-    const [, , sport] = fact;
+    const [person, , sport] = fact;
     const sportFacts = bySport.get(sport) || [];
     const people = unique(sportFacts.map(([person]) => person));
     const achievements = unique(sportFacts.map(([, achievement]) => achievement));
     if (people.length < 4 || achievements.length < 4) return [];
-    const meta = { sportContext: sport, sportScopedOptions: true };
-    return [
-      ...personTemplates.map((template, templateIndex) => {
+    const meta = (subject) => ({ sportContext: sport, sportScopedOptions: true, subject });
+    const personRows = personTemplates.map((template, templateIndex) => {
         const [question, answer] = template(fact);
-        return [question, answer, pickDistractors(answer, people, index + templateIndex), meta];
-      }),
-      ...achievementTemplates.map((template, templateIndex) => {
+        return [question, answer, pickDistractors(answer, people, index + templateIndex), meta(answer)];
+      });
+    const safeAchievements = achievements.filter((item) => !containsText(item, person));
+    const achievementRows = safeAchievements.length < 4 ? [] : achievementTemplates.map((template, templateIndex) => {
         const [question, answer] = template(fact);
-        return [question, answer, pickDistractors(answer, achievements, index + templateIndex), meta];
-      })
-    ];
+        return [question, answer, pickDistractors(answer, safeAchievements, index + templateIndex), meta(person)];
+      });
+    return [...personRows, ...achievementRows];
   });
 }
 
@@ -960,12 +1012,26 @@ function rowsFrom(facts, questionFn, answerFn, poolFn) {
   });
 }
 
-function pickDistractors(answer, pool, index) {
-  const choices = pool.filter((item) => item !== answer);
+function pickDistractors(answer, pool, index, forbidden = []) {
+  const choices = pool.filter((item) => {
+    return !optionConflicts(item, answer) && !forbidden.some((term) => containsText(item, term));
+  });
   if (choices.length < 3) {
     throw new Error(`Not enough distractors for ${answer}.`);
   }
   return [0, 1, 2].map((offset) => choices[(index + offset) % choices.length]);
+}
+
+function containsText(value, term) {
+  return normalizeText(value).includes(normalizeText(term));
+}
+
+function optionConflicts(option, answer) {
+  return option === answer || containsText(option, answer) || containsText(answer, option);
+}
+
+function normalizeText(value) {
+  return String(value).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
 function unique(values) {

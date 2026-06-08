@@ -90,13 +90,75 @@ export function createQuiz(questions, modeId, difficulty = "normal", random = Ma
     if (candidates.length < count) {
       throw new Error(`Mode ${modeId} at ${difficulty} needs ${count} ${category} questions, but only ${candidates.length} exist.`);
     }
-    return shuffle(candidates, random).slice(0, count);
+    return selectQuestions(candidates, count, category, random);
   });
 
   return shuffle(selected, random).map((question, index) => ({
     ...question,
     quizNumber: index + 1
   }));
+}
+
+function selectQuestions(candidates, count, category, random) {
+  if (category !== "sport") {
+    return selectDiverseQuestions(shuffle(candidates, random), count);
+  }
+
+  const weighted = shuffle(candidates, random).sort((a, b) => sportWeight(b) - sportWeight(a));
+  return selectDiverseQuestions(weighted, count, {
+    getGroup: (question) => question.sportContext || "other",
+    maxPerGroup: (group) => {
+      if (group === "netball") return 1;
+      if (group === "NBL basketball" || group === "Big Bash cricket") return 2;
+      if (group === "Australian rules football" || group === "rugby league") return 5;
+      return 3;
+    }
+  });
+}
+
+function selectDiverseQuestions(candidates, count, grouping = null) {
+  const selected = [];
+  const usedSubjects = new Set();
+  const groupCounts = {};
+
+  for (const question of candidates) {
+    const subject = question.subject || question.answer;
+    if (usedSubjects.has(subject)) continue;
+
+    if (grouping) {
+      const group = grouping.getGroup(question);
+      const max = grouping.maxPerGroup(group);
+      if ((groupCounts[group] || 0) >= max) continue;
+      groupCounts[group] = (groupCounts[group] || 0) + 1;
+    }
+
+    selected.push(question);
+    usedSubjects.add(subject);
+    if (selected.length === count) return selected;
+  }
+
+  for (const question of candidates) {
+    if (selected.some((item) => item.id === question.id)) continue;
+    const subject = question.subject || question.answer;
+    if (usedSubjects.has(subject)) continue;
+    selected.push(question);
+    usedSubjects.add(subject);
+    if (selected.length === count) return selected;
+  }
+
+  return selected;
+}
+
+function sportWeight(question) {
+  const weights = {
+    "Australian rules football": 9,
+    "rugby league": 9,
+    "Big Bash cricket": 6,
+    "NBL basketball": 6,
+    cricket: 5,
+    netball: 3
+  };
+  return weights[question.sportContext] || 2;
 }
 
 export function scoreQuiz(quizQuestions, answersById) {

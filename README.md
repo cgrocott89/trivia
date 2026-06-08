@@ -2,8 +2,8 @@
 
 A static GitHub Pages trivia site with 20-question multiple-choice quizzes.
 
-The question bank contains 10,000 pub-trivia style questions: 2,500 sport, 2,500 music, 2,500 culture, and 2,500 general interest.
-Each category has 300 easy, 1,100 normal, and 1,100 hard questions.
+The question bank contains 20,000 pub-trivia style questions: 5,000 sport, 5,000 music, 5,000 culture, and 5,000 general interest.
+Each category has 500 easy, 2,250 normal, and 2,250 hard questions.
 
 ## Quiz modes
 
