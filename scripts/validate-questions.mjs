@@ -12,6 +12,7 @@ const EXPECTED_DIFFICULTY_COUNTS = {
 const errors = [];
 const ids = new Set();
 const questionTexts = new Set();
+const missingSemanticKeys = [];
 const counts = Object.fromEntries(EXPECTED_CATEGORIES.map((category) => [category, 0]));
 const difficultyIds = new Set(DIFFICULTY_LEVELS.map((difficulty) => difficulty.id));
 const difficultyCounts = Object.fromEntries(
@@ -27,6 +28,7 @@ QUESTION_BANK.forEach((question, index) => {
   if (!question.id) errors.push(`Question at index ${index} is missing id.`);
   if (ids.has(question.id)) errors.push(`Duplicate id: ${question.id}`);
   ids.add(question.id);
+  if (!question.semanticKey) missingSemanticKeys.push(label);
   if (questionTexts.has(question.question)) errors.push(`Duplicate question text: ${question.question}`);
   questionTexts.add(question.question);
 
@@ -94,6 +96,10 @@ for (const mode of QUIZ_MODES) {
 
 if (QUESTION_BANK.length !== EXPECTED_CATEGORIES.length * EXPECTED_PER_CATEGORY) {
   errors.push(`Question bank has ${QUESTION_BANK.length} questions; expected ${EXPECTED_CATEGORIES.length * EXPECTED_PER_CATEGORY}.`);
+}
+
+if (missingSemanticKeys.length > 0) {
+  errors.push(`Questions missing semantic keys: ${missingSemanticKeys.slice(0, 20).join(", ")}`);
 }
 
 if (errors.length > 0) {

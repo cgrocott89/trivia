@@ -17,6 +17,7 @@ for (const mode of QUIZ_MODES) {
     assert.equal(new Set(quiz.map((question) => question.difficulty)).size, 1, `${mode.id}/${difficulty.id} should use one difficulty`);
     assert.equal(quiz[0].difficulty, difficulty.id, `${mode.id}/${difficulty.id} should use requested difficulty`);
     assertNoRepeatedSubjects(quiz, `${mode.id}/${difficulty.id}`);
+    assertNoRepeatedSemanticKeys(quiz, `${mode.id}/${difficulty.id}`);
     if (mode.id === "sport") assertSportContextCaps(quiz, `${mode.id}/${difficulty.id}`);
 
     const correctAnswers = Object.fromEntries(quiz.map((question) => [question.id, question.answer]));
@@ -30,6 +31,15 @@ for (const mode of QUIZ_MODES) {
 const firstMixed = createQuiz(QUESTION_BANK, "mixed", "normal", seededRandom(1)).map((question) => question.id).join(",");
 const secondMixed = createQuiz(QUESTION_BANK, "mixed", "normal", seededRandom(2)).map((question) => question.id).join(",");
 assert.notEqual(firstMixed, secondMixed, "Mixed quiz should vary with different random seeds");
+
+for (const difficulty of DIFFICULTY_LEVELS) {
+  for (let seed = 1; seed <= 50; seed += 1) {
+    const quiz = createQuiz(QUESTION_BANK, "sport", difficulty.id, seededRandom(seed));
+    assertNoRepeatedSubjects(quiz, `sport/${difficulty.id}/seed-${seed}`);
+    assertNoRepeatedSemanticKeys(quiz, `sport/${difficulty.id}/seed-${seed}`);
+    assertSportContextCaps(quiz, `sport/${difficulty.id}/seed-${seed}`);
+  }
+}
 
 console.log("Smoke tests passed.");
 
@@ -48,6 +58,11 @@ function seededRandom(seed) {
 function assertNoRepeatedSubjects(quiz, label) {
   const subjects = quiz.map((question) => question.subject).filter(Boolean);
   assert.equal(new Set(subjects).size, subjects.length, `${label} should not repeat the same subject`);
+}
+
+function assertNoRepeatedSemanticKeys(quiz, label) {
+  const keys = quiz.map((question) => question.semanticKey).filter(Boolean);
+  assert.equal(new Set(keys).size, keys.length, `${label} should not repeat the same semantic question`);
 }
 
 function assertSportContextCaps(quiz, label) {

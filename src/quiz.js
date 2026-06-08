@@ -119,11 +119,13 @@ function selectQuestions(candidates, count, category, random) {
 function selectDiverseQuestions(candidates, count, grouping = null) {
   const selected = [];
   const usedSubjects = new Set();
+  const usedSemanticKeys = new Set();
   const groupCounts = {};
 
   for (const question of candidates) {
     const subject = question.subject || question.answer;
     if (usedSubjects.has(subject)) continue;
+    if (question.semanticKey && usedSemanticKeys.has(question.semanticKey)) continue;
 
     if (grouping) {
       const group = grouping.getGroup(question);
@@ -134,6 +136,7 @@ function selectDiverseQuestions(candidates, count, grouping = null) {
 
     selected.push(question);
     usedSubjects.add(subject);
+    if (question.semanticKey) usedSemanticKeys.add(question.semanticKey);
     if (selected.length === count) return selected;
   }
 
@@ -141,8 +144,10 @@ function selectDiverseQuestions(candidates, count, grouping = null) {
     if (selected.some((item) => item.id === question.id)) continue;
     const subject = question.subject || question.answer;
     if (usedSubjects.has(subject)) continue;
+    if (question.semanticKey && usedSemanticKeys.has(question.semanticKey)) continue;
     selected.push(question);
     usedSubjects.add(subject);
+    if (question.semanticKey) usedSemanticKeys.add(question.semanticKey);
     if (selected.length === count) return selected;
   }
 

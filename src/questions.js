@@ -327,6 +327,7 @@ export const QUESTION_BANK = Object.entries(EXPANDED_QUESTION_SETS).flatMap(([ca
       answer,
       difficulty: "normal",
       hardnessScore: getQuestionHardnessScore(category, question, answer, meta),
+      semanticKey: getSemanticKey(question, answer, meta),
       ...meta
     };
   });
@@ -419,4 +420,32 @@ function scoreGeneralQuestion(text) {
   if (/which country has|serves as the capital|name the capital/.test(text)) score += 1;
   if (/david warren|graeme clark|howard florey|royal flying doctor|tropic of capricorn/.test(text)) score += 3;
   return score;
+}
+
+function getSemanticKey(question, answer, meta) {
+  if (meta.factKey) return meta.factKey;
+  return `${normalizeSemanticText(stripQuestionWrapper(question))}|${normalizeSemanticText(answer)}`;
+}
+
+function stripQuestionWrapper(question) {
+  return String(question)
+    .replace(/^which answer best fits this clue:\s*/i, "")
+    .replace(/^choose the correct answer:\s*/i, "")
+    .replace(/^what would you lock in for this one:\s*/i, "")
+    .replace(/^which option solves this question:\s*/i, "")
+    .replace(/^what is the correct response:\s*/i, "")
+    .replace(/^which option would you choose:\s*/i, "")
+    .replace(/^what answer completes this:\s*/i, "")
+    .replace(/^which choice is right:\s*/i, "")
+    .replace(/^what is the best answer:\s*/i, "")
+    .replace(/^which response is correct:\s*/i, "")
+    .replace(/^how would you answer this:\s*/i, "")
+    .replace(/^what should the answer be:\s*/i, "")
+    .replace(/^which option matches:\s*/i, "")
+    .replace(/^what is the right call:\s*/i, "")
+    .replace(/^which answer is the fit:\s*/i, "");
+}
+
+function normalizeSemanticText(value) {
+  return String(value).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }

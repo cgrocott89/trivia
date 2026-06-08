@@ -87,6 +87,10 @@ function lowerFirst(value) {
   return value.charAt(0).toLowerCase() + value.slice(1);
 }
 
+function possessive(value) {
+  return value.endsWith("s") ? `${value}'` : `${value}'s`;
+}
+
 function buildSportRows() {
   const teamVenues = list(`
 Liverpool|Anfield
@@ -399,7 +403,11 @@ Jonah Lomu|became a breakout star at the 1995 Rugby World Cup|rugby union
 Andrew Gaze|won a record seven NBL MVP awards|NBL basketball
 Andrew Gaze|finished as the NBL's all-time leading scorer|NBL basketball
 Bryce Cotton|won his fifth NBL MVP award for the 2024/25 season|NBL basketball
-Perth Wildcats|won their 10th NBL championship in 2020|NBL basketball
+Perth Wildcats|won their 10th NBL championship in 2020|NBL basketball|team
+Sydney Kings|won three straight NBL championships from 2003 to 2005|NBL basketball|team
+New Zealand Breakers|won three straight NBL championships from 2011 to 2013|NBL basketball|team
+Melbourne United|won the 2018 NBL championship|NBL basketball|team
+Adelaide 36ers|won the 1986 NBL championship with a 24-2 regular-season record|NBL basketball|team
 Leroy Loggins|became one of the NBL's all-time great scorers|NBL basketball
 Chris Anstey|won both NBL MVP and Grand Final MVP honours in 2005/06|NBL basketball
 Liz Ellis|became one of Australia's most-capped netballers|netball
@@ -410,8 +418,12 @@ Laura Geitz|captained Australia to the 2015 Netball World Cup title|netball
 Gretel Bueta|was named MVP of the 2022 Commonwealth Games netball final|netball
 Chris Lynn|became the Big Bash League's leading run-scorer|Big Bash cricket
 Aaron Finch|made an unbeaten 111 for the Melbourne Renegades in BBL 02|Big Bash cricket
-Perth Scorchers|became the first Big Bash League club to win five titles|Big Bash cricket
-Sydney Sixers|won back-to-back BBL titles in BBL 09 and BBL 10|Big Bash cricket
+Perth Scorchers|became the first Big Bash League club to win five titles|Big Bash cricket|team
+Sydney Sixers|won back-to-back BBL titles in BBL 09 and BBL 10|Big Bash cricket|team
+Brisbane Heat|won the BBL 02 title|Big Bash cricket|team
+Adelaide Strikers|won the BBL 07 title|Big Bash cricket|team
+Melbourne Renegades|won the BBL 08 title|Big Bash cricket|team
+Sydney Thunder|won the BBL 05 title|Big Bash cricket|team
 Rashid Khan|took a Big Bash League hat-trick for the Adelaide Strikers|Big Bash cricket
 Dan Christian|became known for winning T20 titles across multiple leagues|Big Bash cricket
 Cathy Freeman|won the women's 400 metres at the Sydney 2000 Olympics|Australian Olympic history
@@ -449,45 +461,58 @@ Sally Pearson|won Olympic 100 metres hurdles gold at London 2012|Australian Olym
 }
 
 function milestoneRows(facts) {
-  const bySport = groupRows(facts, ([, , sport]) => sport);
-  const personTemplates = [
-    ([person, achievement, sport]) => [`Which ${sport} name ${achievement}?`, person],
-    ([person, achievement, sport]) => [`In ${sport}, which name is linked to this achievement: ${achievement}?`, person],
-    ([person, achievement, sport]) => [`The ${sport} milestone '${achievement}' belongs to which name or side?`, person],
-    ([person, achievement, sport]) => [`Which ${sport} name is linked with this achievement: ${achievement}?`, person],
-    ([person, achievement, sport]) => [`Who is the ${sport} answer for this milestone: ${achievement}?`, person],
-    ([person, achievement, sport]) => [`Which ${sport} name is known for having ${achievement}?`, person],
-    ([person, achievement, sport]) => [`Which name achieved this in ${sport}: ${achievement}?`, person],
-    ([person, achievement, sport]) => [`Which ${sport} answer should be matched to '${achievement}'?`, person],
-    ([person, achievement, sport]) => [`Name the ${sport} answer linked to this feat: ${achievement}.`, person],
-    ([person, achievement, sport]) => [`Which ${sport} name is connected to the record or feat '${achievement}'?`, person],
-    ([person, achievement, sport]) => [`Who is the correct ${sport} option for '${achievement}'?`, person],
-    ([person, achievement, sport]) => [`Which ${sport} answer owns this trivia clue: ${achievement}?`, person]
+  const typedFacts = facts.map(([subject, achievement, sport, entityType]) => [
+    subject,
+    achievement,
+    sport,
+    entityType || "person"
+  ]);
+  const bySportAndType = groupRows(typedFacts, ([, , sport, entityType]) => `${sport}|${entityType}`);
+  const subjectTemplates = [
+    ([subject, achievement, sport], noun) => [`Which ${sport} ${noun} ${achievement}?`, subject],
+    ([subject, achievement, sport], noun) => [`In ${sport}, which ${noun} is linked to this achievement: ${achievement}?`, subject],
+    ([subject, achievement, sport], noun) => [`The ${sport} milestone '${achievement}' belongs to which ${noun}?`, subject],
+    ([subject, achievement, sport], noun) => [`Which ${sport} ${noun} is linked with this achievement: ${achievement}?`, subject],
+    ([subject, achievement, sport], noun) => [`Which ${sport} ${noun} is the answer for this milestone: ${achievement}?`, subject],
+    ([subject, achievement, sport], noun) => [`Which ${sport} ${noun} is known for this feat: ${achievement}?`, subject],
+    ([subject, achievement, sport], noun) => [`Which ${noun} achieved this in ${sport}: ${achievement}?`, subject],
+    ([subject, achievement, sport], noun) => [`Which ${sport} ${noun} should be matched to '${achievement}'?`, subject],
+    ([subject, achievement, sport], noun) => [`Name the ${sport} ${noun} linked to this feat: ${achievement}.`, subject],
+    ([subject, achievement, sport], noun) => [`Which ${sport} ${noun} is connected to the record or feat '${achievement}'?`, subject],
+    ([subject, achievement, sport], noun) => [`Which ${sport} ${noun} is the correct option for '${achievement}'?`, subject],
+    ([subject, achievement, sport], noun) => [`Which ${sport} ${noun} owns this trivia clue: ${achievement}?`, subject]
   ];
   const achievementTemplates = [
-    ([person, achievement, sport]) => [`What ${sport} achievement is ${person} known for?`, achievement],
-    ([person, achievement, sport]) => [`Which milestone belongs to ${person} in ${sport}?`, achievement],
-    ([person, achievement, sport]) => [`In ${sport}, which feat is tied to ${person}?`, achievement],
-    ([person, achievement, sport]) => [`Which ${sport} record or achievement is associated with ${person}?`, achievement],
-    ([person, achievement, sport]) => [`What did ${person} do in ${sport}?`, achievement],
-    ([person, achievement, sport]) => [`Choose the ${sport} milestone linked to ${person}.`, achievement],
-    ([person, achievement, sport]) => [`Which statement best describes ${person}'s ${sport} achievement?`, achievement],
-    ([person, achievement, sport]) => [`What is ${person}'s notable ${sport} milestone?`, achievement],
-    ([person, achievement, sport]) => [`Which ${sport} feat should be matched with ${person}?`, achievement],
-    ([person, achievement, sport]) => [`What record or feat makes ${person} a ${sport} trivia answer?`, achievement],
-    ([person, achievement, sport]) => [`Which ${sport} achievement completes the clue for ${person}?`, achievement],
-    ([person, achievement, sport]) => [`What is the best ${sport} milestone match for ${person}?`, achievement]
+    ([subject, achievement, sport]) => [`What ${sport} achievement is ${subject} known for?`, achievement],
+    ([subject, achievement, sport]) => [`Which milestone belongs to ${subject} in ${sport}?`, achievement],
+    ([subject, achievement, sport]) => [`In ${sport}, which feat is tied to ${subject}?`, achievement],
+    ([subject, achievement, sport]) => [`Which ${sport} record or achievement is associated with ${subject}?`, achievement],
+    ([subject, achievement, sport]) => [`What did ${subject} do in ${sport}?`, achievement],
+    ([subject, achievement, sport]) => [`Choose the ${sport} milestone linked to ${subject}.`, achievement],
+    ([subject, achievement, sport]) => [`Which statement best describes ${possessive(subject)} ${sport} achievement?`, achievement],
+    ([subject, achievement, sport]) => [`What is ${possessive(subject)} notable ${sport} milestone?`, achievement],
+    ([subject, achievement, sport]) => [`Which ${sport} feat should be matched with ${subject}?`, achievement],
+    ([subject, achievement, sport]) => [`What record or feat makes ${subject} a ${sport} trivia answer?`, achievement],
+    ([subject, achievement, sport]) => [`Which ${sport} achievement completes the clue for ${subject}?`, achievement],
+    ([subject, achievement, sport]) => [`What is the best ${sport} milestone match for ${subject}?`, achievement]
   ];
 
-  return facts.flatMap((fact, index) => {
-    const [person, , sport] = fact;
-    const sportFacts = bySport.get(sport) || [];
+  return typedFacts.flatMap((fact, index) => {
+    const [person, achievement, sport, entityType] = fact;
+    const sportFacts = bySportAndType.get(`${sport}|${entityType}`) || [];
     const people = unique(sportFacts.map(([person]) => person));
     const achievements = unique(sportFacts.map(([, achievement]) => achievement));
     if (people.length < 4 || achievements.length < 4) return [];
-    const meta = (subject) => ({ sportContext: sport, sportScopedOptions: true, subject });
-    const personRows = personTemplates.map((template, templateIndex) => {
-        const [question, answer] = template(fact);
+    const meta = (subject) => ({
+      sportContext: sport,
+      sportEntityType: entityType,
+      sportScopedOptions: true,
+      subject,
+      factKey: `sport-milestone|${normalizeText(sport)}|${entityType}|${normalizeText(person)}|${normalizeText(achievement)}`
+    });
+    const subjectNoun = entityType === "team" ? "side" : "name";
+    const subjectRows = subjectTemplates.map((template, templateIndex) => {
+        const [question, answer] = template(fact, subjectNoun);
         return [question, answer, pickDistractors(answer, people, index + templateIndex), meta(answer)];
       });
     const safeAchievements = achievements.filter((item) => !containsText(item, person));
@@ -495,7 +520,7 @@ function milestoneRows(facts) {
         const [question, answer] = template(fact);
         return [question, answer, pickDistractors(answer, safeAchievements, index + templateIndex), meta(person)];
       });
-    return [...personRows, ...achievementRows];
+    return [...subjectRows, ...achievementRows];
   });
 }
 
